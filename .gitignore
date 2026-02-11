@@ -1,0 +1,23 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+env/
+.env
+*.log
+report.json
+report.html
+visual-regression-report_*.json
+visual-regression-report_*.html
+.textual/
+
+# Screenshots / Diffs (generated)
+screenshots/
+baselines/
+diffs/
