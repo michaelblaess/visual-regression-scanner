@@ -5,8 +5,8 @@ from __future__ import annotations
 import argparse
 import sys
 
-from . import __version__
-from .app import VisualRegressionScannerApp
+from visual_regression_scanner import __version__
+from visual_regression_scanner.app import VisualRegressionScannerApp
 
 
 BANNER = f"""
