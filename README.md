@@ -2,6 +2,20 @@
 
 TUI-Tool zur Erkennung visueller Regressionen auf Websites. Erstellt automatisch Full-Page-Screenshots aller Seiten einer Sitemap und vergleicht sie gegen gespeicherte Referenzen per Pixel-Diff.
 
+## Installation
+
+### One-Liner (Standalone, kein Python noetig)
+
+**Linux / macOS:**
+```bash
+curl -fsSL https://raw.githubusercontent.com/michaelblaess/visual-regression-scanner/main/install.sh | bash
+```
+
+**Windows (PowerShell):**
+```powershell
+irm https://raw.githubusercontent.com/michaelblaess/visual-regression-scanner/main/install.ps1 | iex
+```
+
 ## Features
 
 - **Automatische Screenshots** aller URLs aus einer XML-Sitemap
@@ -167,3 +181,12 @@ screenshots/
 - Pillow (Bild-Vergleich)
 - httpx (HTTP-Client)
 - Rich (Formatierte Ausgabe)
+
+## Release erstellen
+
+```bash
+git tag v1.1.0
+git push origin v1.1.0
+```
+
+GitHub Actions baut automatisch Executables fuer Windows, Linux und macOS.

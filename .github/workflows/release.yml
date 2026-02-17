@@ -1,0 +1,117 @@
+name: Build & Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    strategy:
+      matrix:
+        include:
+          - os: windows-latest
+            artifact: visual-regression-scanner-windows
+            ext: .zip
+          - os: ubuntu-22.04
+            artifact: visual-regression-scanner-linux
+            ext: .tar.gz
+          - os: macos-latest
+            artifact: visual-regression-scanner-macos
+            ext: .tar.gz
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          pip install -e .
+          pip install pyinstaller
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium
+
+      - name: Build with PyInstaller
+        run: |
+          pyinstaller \
+            --name visual-regression-scanner \
+            --onedir \
+            --console \
+            --add-data "src/visual_regression_scanner/app.tcss:visual_regression_scanner" \
+            --hidden-import visual_regression_scanner \
+            --hidden-import visual_regression_scanner.app \
+            --hidden-import visual_regression_scanner.models \
+            --hidden-import visual_regression_scanner.models.scan_result \
+            --hidden-import visual_regression_scanner.models.sitemap \
+            --hidden-import visual_regression_scanner.services \
+            --hidden-import visual_regression_scanner.services.baseline \
+            --hidden-import visual_regression_scanner.services.comparator \
+            --hidden-import visual_regression_scanner.services.image_viewer \
+            --hidden-import visual_regression_scanner.services.reporter \
+            --hidden-import visual_regression_scanner.services.screenshotter \
+            --hidden-import visual_regression_scanner.screens \
+            --hidden-import visual_regression_scanner.screens.about \
+            --hidden-import visual_regression_scanner.screens.diff_detail \
+            --hidden-import visual_regression_scanner.screens.reset_confirm \
+            --hidden-import visual_regression_scanner.screens.scan_mode \
+            --hidden-import visual_regression_scanner.widgets \
+            --hidden-import visual_regression_scanner.widgets.diff_detail_view \
+            --hidden-import visual_regression_scanner.widgets.results_table \
+            --hidden-import visual_regression_scanner.widgets.summary_panel \
+            --collect-submodules rich._unicode_data \
+            src/visual_regression_scanner/__main__.py
+        shell: bash
+
+      - name: Bundle Chromium browsers
+        run: |
+          cp -r "$HOME/.cache/ms-playwright" dist/visual-regression-scanner/browsers 2>/dev/null || \
+          cp -r "$USERPROFILE/AppData/Local/ms-playwright" dist/visual-regression-scanner/browsers 2>/dev/null || \
+          cp -r "$HOME/Library/Caches/ms-playwright" dist/visual-regression-scanner/browsers 2>/dev/null || \
+          echo "Warning: Could not find Playwright browsers"
+        shell: bash
+
+      - name: Package (Windows)
+        if: matrix.os == 'windows-latest'
+        run: |
+          cd dist
+          Compress-Archive -Path visual-regression-scanner -DestinationPath ${{ matrix.artifact }}.zip
+        shell: pwsh
+
+      - name: Package (Linux/macOS)
+        if: matrix.os != 'windows-latest'
+        run: |
+          cd dist
+          tar -czf ${{ matrix.artifact }}.tar.gz visual-regression-scanner
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ matrix.artifact }}
+          path: dist/${{ matrix.artifact }}${{ matrix.ext }}
+
+  release:
+    needs: build
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          merge-multiple: true
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          files: |
+            visual-regression-scanner-windows.zip
+            visual-regression-scanner-linux.tar.gz
+            visual-regression-scanner-macos.tar.gz
