@@ -19,6 +19,8 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, RichLog
 
+from textual_themes import register_all
+
 from . import __version__, __year__
 from .models.scan_result import ComparisonStatus, ComparisonSummary, ScreenshotResult
 from .models.sitemap import SitemapParser, SitemapError
@@ -77,6 +79,10 @@ class VisualRegressionScannerApp(App):
         cookies: list[dict[str, str]] | None = None,
     ) -> None:
         super().__init__()
+
+        # Retro-Themes registrieren (C64, Amiga, Atari ST, IBM Terminal, NeXTSTEP, BeOS)
+        register_all(self)
+
         self.sitemap_url = sitemap_url
         self.screenshots_dir = os.path.abspath(screenshots_dir)
         self.threshold = threshold
