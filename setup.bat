@@ -47,7 +47,13 @@ if exist "%VENV_DIR%\Scripts\python.exe" (
 echo.
 
 REM --- SSL-Workaround fuer Corporate-Proxy (Zscaler) ---
+REM pip.ini in der venv sorgt dafuer, dass ALLE pip-Aufrufe (auch
+REM Build-Subprocesses fuer setuptools etc.) die trusted-hosts kennen.
 set PIP_TRUSTED=--trusted-host pypi.org --trusted-host pypi.python.org --trusted-host files.pythonhosted.org
+if not exist "%VENV_DIR%\pip.ini" (
+    echo [global]> "%VENV_DIR%\pip.ini"
+    echo trusted-host = pypi.org pypi.python.org files.pythonhosted.org>> "%VENV_DIR%\pip.ini"
+)
 
 REM --- pip upgrade ---
 echo  Aktualisiere pip...
