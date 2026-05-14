@@ -1,13 +1,13 @@
 # Visual Regression Scanner
 
-[![Stars](https://img.shields.io/github/stars/michaelblaess/visual-regression-scanner?logo=github&color=fbbf24)](https://github.com/michaelblaess/visual-regression-scanner/stargazers)
-[![Forks](https://img.shields.io/github/forks/michaelblaess/visual-regression-scanner?logo=github&color=34d399)](https://github.com/michaelblaess/visual-regression-scanner/network/members)
-[![Issues](https://img.shields.io/github/issues/michaelblaess/visual-regression-scanner?logo=github&color=f87171)](https://github.com/michaelblaess/visual-regression-scanner/issues)
-[![Pull Requests](https://img.shields.io/github/issues-pr/michaelblaess/visual-regression-scanner?logo=github&color=a78bfa)](https://github.com/michaelblaess/visual-regression-scanner/pulls)
+[![Stars](https://img.shields.io/github/stars/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=fbbf24)](https://github.com/michaelblaess/visual-regression-scanner/stargazers)
+[![Forks](https://img.shields.io/github/forks/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=34d399)](https://github.com/michaelblaess/visual-regression-scanner/network/members)
+[![Issues](https://img.shields.io/github/issues/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=f87171)](https://github.com/michaelblaess/visual-regression-scanner/issues)
+[![Pull Requests](https://img.shields.io/github/issues-pr/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=a78bfa)](https://github.com/michaelblaess/visual-regression-scanner/pulls)
 
-[![Last Commit](https://img.shields.io/github/last-commit/michaelblaess/visual-regression-scanner?logo=git&color=3b82f6)](https://github.com/michaelblaess/visual-regression-scanner/commits/main)
+[![Last Commit](https://img.shields.io/github/last-commit/michaelblaess/visual-regression-scanner?logo=git&logoColor=white&color=3b82f6)](https://github.com/michaelblaess/visual-regression-scanner/commits/main)
 [![License](https://img.shields.io/badge/license-Apache_2.0-3b82f6)](LICENSE)
-[![Python](https://img.shields.io/badge/python-3.10+-3b82f6?logo=python)](https://www.python.org/)
+[![Python](https://img.shields.io/badge/python-3.10+-3b82f6?logo=python&logoColor=white)](https://www.python.org/)
 
 TUI-Tool zur Erkennung visueller Regressionen auf Websites. Erstellt automatisch Full-Page-Screenshots aller Seiten einer Sitemap und vergleicht sie gegen gespeicherte Referenzen per Pixel-Diff.
 
