@@ -8,7 +8,6 @@ import sys
 from visual_regression_scanner import __version__
 from visual_regression_scanner.app import VisualRegressionScannerApp
 
-
 BANNER = f"""
   Visual Regression Scanner v{__version__}
   Erkennt visuelle Aenderungen auf Websites per Screenshot-Vergleich
@@ -47,7 +46,8 @@ def main() -> None:
         help="URL der Sitemap (XML)",
     )
     parser.add_argument(
-        "--screenshots-dir", "-d",
+        "--screenshots-dir",
+        "-d",
         default="./screenshots",
         metavar="PATH",
         help="Root-Verzeichnis fuer Screenshots (default: ./screenshots). Pro Site wird ein Unterverzeichnis angelegt.",
@@ -78,14 +78,16 @@ def main() -> None:
         help="Viewport-Groesse (default: 1920x1080)",
     )
     parser.add_argument(
-        "--concurrency", "-c",
+        "--concurrency",
+        "-c",
         type=int,
         default=4,
         metavar="N",
         help="Max parallele Browser-Tabs (default: 4)",
     )
     parser.add_argument(
-        "--timeout", "-t",
+        "--timeout",
+        "-t",
         type=int,
         default=30,
         metavar="SEC",
@@ -110,7 +112,8 @@ def main() -> None:
         help="Browser sichtbar starten (Debugging)",
     )
     parser.add_argument(
-        "--filter", "-f",
+        "--filter",
+        "-f",
         default="",
         metavar="TEXT",
         help="Nur URLs scannen die TEXT enthalten",

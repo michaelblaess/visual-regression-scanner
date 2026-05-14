@@ -7,7 +7,7 @@ import os
 import tempfile
 import webbrowser
 
-from ..models.scan_result import ComparisonStatus, ScreenshotResult
+from ..models.scan_result import ScreenshotResult
 
 
 def open_comparison_view(result: ScreenshotResult) -> str | None:
@@ -55,22 +55,28 @@ def _collect_images(result: ScreenshotResult) -> list[dict]:
     images = []
 
     if result.baseline_path and os.path.exists(result.baseline_path):
-        images.append({
-            "label": "Baseline",
-            "data": _image_to_base64(result.baseline_path),
-        })
+        images.append(
+            {
+                "label": "Baseline",
+                "data": _image_to_base64(result.baseline_path),
+            }
+        )
 
     if result.screenshot_path and os.path.exists(result.screenshot_path):
-        images.append({
-            "label": "Aktuell",
-            "data": _image_to_base64(result.screenshot_path),
-        })
+        images.append(
+            {
+                "label": "Aktuell",
+                "data": _image_to_base64(result.screenshot_path),
+            }
+        )
 
     if result.diff_path and os.path.exists(result.diff_path):
-        images.append({
-            "label": f"Diff ({result.diff_percentage:.2f}%)",
-            "data": _image_to_base64(result.diff_path),
-        })
+        images.append(
+            {
+                "label": f"Diff ({result.diff_percentage:.2f}%)",
+                "data": _image_to_base64(result.diff_path),
+            }
+        )
 
     return images
 
@@ -111,9 +117,9 @@ def _build_viewer_html(result: ScreenshotResult, images: list[dict]) -> str:
             f'<div class="thumb-card" onclick="openLightbox({idx})">'
             f'  <div class="thumb-img-wrap">'
             f'    <img src="data:image/png;base64,{img["data"]}" alt="{img["label"]}">'
-            f'  </div>'
+            f"  </div>"
             f'  <div class="thumb-label">{img["label"]}</div>'
-            f'</div>'
+            f"</div>"
         )
 
     # Lightbox-Slides erzeugen (mit img-container fuer Zoom/Pan)
@@ -123,9 +129,9 @@ def _build_viewer_html(result: ScreenshotResult, images: list[dict]) -> str:
             f'<div class="slide" id="slide-{idx}">'
             f'  <div class="img-container" id="container-{idx}">'
             f'    <img src="data:image/png;base64,{img["data"]}" alt="{img["label"]}">'
-            f'  </div>'
+            f"  </div>"
             f'  <div class="slide-label">{img["label"]}</div>'
-            f'</div>'
+            f"</div>"
         )
 
     return f"""<!DOCTYPE html>
@@ -236,7 +242,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
 </div>
 
 <div class="thumbs">
-    {''.join(thumb_cards)}
+    {"".join(thumb_cards)}
 </div>
 
 <p class="hint">Klick = Lightbox | Scroll = Zoom | Klick auf Bild = 200% | Pfeiltasten | +/- Zoom | 0 = Reset | ESC</p>
@@ -245,7 +251,7 @@ body {{ font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans
     <button class="close-btn" onclick="closeLightbox()">&times;</button>
     <button class="nav-btn nav-prev" onclick="prevSlide()">&#8249;</button>
     <button class="nav-btn nav-next" onclick="nextSlide()">&#8250;</button>
-    {''.join(slides)}
+    {"".join(slides)}
     <div class="counter" id="counter"></div>
     <div class="zoom-info" id="zoom-info"></div>
 </div>
@@ -461,8 +467,7 @@ def _html_escape(text: str) -> str:
         HTML-sicherer Text.
     """
     return (
-        text
-        .replace("&", "&amp;")
+        text.replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
         .replace('"', "&quot;")

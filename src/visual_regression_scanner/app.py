@@ -9,7 +9,6 @@ import os
 import shutil
 import time
 from datetime import datetime
-from pathlib import Path
 from urllib.parse import urlparse
 
 from textual import work
@@ -18,12 +17,11 @@ from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, RichLog
-
 from textual_themes import register_all
 
 from . import __version__, __year__
 from .models.scan_result import ComparisonStatus, ComparisonSummary, ScreenshotResult
-from .models.sitemap import SitemapParser, SitemapError
+from .models.sitemap import SitemapError, SitemapParser
 from .services.baseline import BaselineManager
 from .services.comparator import Comparator
 from .services.reporter import Reporter
@@ -31,7 +29,6 @@ from .services.screenshotter import Screenshotter
 from .widgets.diff_detail_view import DiffDetailView
 from .widgets.results_table import ResultsTable
 from .widgets.summary_panel import SummaryPanel
-
 
 # Log-Hoehe: min/max/default (Zeilen)
 LOG_HEIGHT_DEFAULT = 15
@@ -151,6 +148,7 @@ class VisualRegressionScannerApp(App):
         # Focus auf die Tabelle setzen damit Footer-Bindings sofort sichtbar
         try:
             from textual.widgets import DataTable
+
             table = self.query_one("#results-data", DataTable)
             table.focus()
         except Exception:
@@ -166,16 +164,24 @@ class VisualRegressionScannerApp(App):
             Beschreibungstext fuer den Scan-Button im Footer.
         """
         has_baseline = (
-            self._baseline_dir
-            and os.path.exists(self._baseline_dir)
-            and any(f.endswith(".png") for f in os.listdir(self._baseline_dir))
-        ) if self._baseline_dir else False
+            (
+                self._baseline_dir
+                and os.path.exists(self._baseline_dir)
+                and any(f.endswith(".png") for f in os.listdir(self._baseline_dir))
+            )
+            if self._baseline_dir
+            else False
+        )
 
         has_current = (
-            self._current_dir
-            and os.path.exists(self._current_dir)
-            and any(f.endswith(".png") for f in os.listdir(self._current_dir))
-        ) if self._current_dir else False
+            (
+                self._current_dir
+                and os.path.exists(self._current_dir)
+                and any(f.endswith(".png") for f in os.listdir(self._current_dir))
+            )
+            if self._current_dir
+            else False
+        )
 
         if has_baseline and has_current:
             return "Scan (Modus waehlen)"
@@ -195,9 +201,7 @@ class VisualRegressionScannerApp(App):
     def _apply_scan_label(self) -> None:
         """Wendet das Scan-Label auf die Bindings an und refreshed den Footer."""
         label = self._get_scan_label()
-        self._bindings.key_to_bindings["s"] = [
-            Binding("s", "start_scan", label, show=True)
-        ]
+        self._bindings.key_to_bindings["s"] = [Binding("s", "start_scan", label, show=True)]
         try:
             self.screen.refresh_bindings()
         except Exception:
@@ -225,15 +229,11 @@ class VisualRegressionScannerApp(App):
             self._urls = await parser.parse()
         except SitemapError as e:
             self._write_log(f"[red]Sitemap-Fehler: {e}[/red]")
-            self.app.push_screen(
-                _SitemapErrorScreen(f"Sitemap-Fehler:\n\n{e}")
-            )
+            self.app.push_screen(_SitemapErrorScreen(f"Sitemap-Fehler:\n\n{e}"))
             return
         except Exception as e:
             self._write_log(f"[red]Unerwarteter Fehler: {e}[/red]")
-            self.app.push_screen(
-                _SitemapErrorScreen(f"Unerwarteter Fehler:\n\n{e}")
-            )
+            self.app.push_screen(_SitemapErrorScreen(f"Unerwarteter Fehler:\n\n{e}"))
             return
 
         if not self._urls:
@@ -253,10 +253,7 @@ class VisualRegressionScannerApp(App):
         self._write_log(f"Site-Verzeichnis: {self._site_dir}")
 
         # Ergebnisse initialisieren
-        self._results = [
-            ScreenshotResult(url=url, threshold=self.threshold)
-            for url in self._urls
-        ]
+        self._results = [ScreenshotResult(url=url, threshold=self.threshold) for url in self._urls]
 
         # Vorherige Ergebnisse wiederherstellen (in Thread, blockiert nicht die TUI)
         self._write_log("Pruefe vorherige Ergebnisse...")
@@ -327,9 +324,7 @@ class VisualRegressionScannerApp(App):
                 else 0
             )
             entry["_diff_mtime"] = (
-                os.path.getmtime(result.diff_path)
-                if result.diff_path and os.path.exists(result.diff_path)
-                else 0
+                os.path.getmtime(result.diff_path) if result.diff_path and os.path.exists(result.diff_path) else 0
             )
 
             cache_data["results"].append(entry)
@@ -355,7 +350,7 @@ class VisualRegressionScannerApp(App):
             return None
 
         try:
-            with open(cache_path, "r", encoding="utf-8") as f:
+            with open(cache_path, encoding="utf-8") as f:
                 return json.load(f)
         except (json.JSONDecodeError, OSError):
             return None
@@ -446,16 +441,22 @@ class VisualRegressionScannerApp(App):
                     self._restore_restored = restored
 
                     if result.status == ComparisonStatus.DIFF:
-                        log(f"  ({idx + 1}/{len(self._results)}) [red]DIFF {result.diff_percentage:.2f}%[/red] {result.url}")
+                        log(
+                            f"  ({idx + 1}/{len(self._results)}) [red]DIFF {result.diff_percentage:.2f}%[/red] {result.url}"
+                        )
                     else:
-                        log(f"  ({idx + 1}/{len(self._results)}) [green]OK {result.diff_percentage:.2f}%[/green] {result.url}")
+                        log(
+                            f"  ({idx + 1}/{len(self._results)}) [green]OK {result.diff_percentage:.2f}%[/green] {result.url}"
+                        )
                 else:
                     # Cache-Miss: Vergleich neu berechnen
                     if comparator is None:
                         comparator = Comparator(threshold=self.threshold)
                     try:
                         diff_pct, diff_px, total_px = comparator.compare(
-                            current_path, baseline_path, diff_path,
+                            current_path,
+                            baseline_path,
+                            diff_path,
                         )
                         result.diff_percentage = diff_pct
                         result.diff_pixel_count = diff_px
@@ -467,9 +468,13 @@ class VisualRegressionScannerApp(App):
                         self._restore_restored = restored
 
                         if result.status == ComparisonStatus.DIFF:
-                            log(f"  ({idx + 1}/{len(self._results)}) [red]DIFF {diff_pct:.2f}%[/red] {result.url} [dim](neu berechnet)[/dim]")
+                            log(
+                                f"  ({idx + 1}/{len(self._results)}) [red]DIFF {diff_pct:.2f}%[/red] {result.url} [dim](neu berechnet)[/dim]"
+                            )
                         else:
-                            log(f"  ({idx + 1}/{len(self._results)}) [green]OK {diff_pct:.2f}%[/green] {result.url} [dim](neu berechnet)[/dim]")
+                            log(
+                                f"  ({idx + 1}/{len(self._results)}) [green]OK {diff_pct:.2f}%[/green] {result.url} [dim](neu berechnet)[/dim]"
+                            )
                     except Exception as e:
                         log(f"  ({idx + 1}/{len(self._results)}) [red]ERR[/red] {result.url}: {e}")
             elif has_current and not has_baseline:
@@ -554,6 +559,7 @@ class VisualRegressionScannerApp(App):
         if baseline_count > 0 and current_count > 0:
             # Beide vorhanden -> Benutzer fragen
             from .screens.scan_mode import ScanModeScreen
+
             self.push_screen(
                 ScanModeScreen(baseline_count, current_count),
                 callback=self._on_scan_mode_selected,
@@ -574,6 +580,7 @@ class VisualRegressionScannerApp(App):
             return
 
         from .screens.scan_mode import SCAN_UPDATE_BASELINE
+
         self._do_start_scan(update_baseline=(mode == SCAN_UPDATE_BASELINE))
 
     @work(exclusive=True)
@@ -703,14 +710,10 @@ class VisualRegressionScannerApp(App):
 
                     if diff_pct > self.threshold:
                         result.status = ComparisonStatus.DIFF
-                        self._write_log(
-                            f"  [red]DIFF[/red] {result.url} ({diff_pct:.2f}%)"
-                        )
+                        self._write_log(f"  [red]DIFF[/red] {result.url} ({diff_pct:.2f}%)")
                     else:
                         result.status = ComparisonStatus.MATCH
-                        self._write_log(
-                            f"  [green]OK[/green] {result.url} ({diff_pct:.2f}%)"
-                        )
+                        self._write_log(f"  [green]OK[/green] {result.url} ({diff_pct:.2f}%)")
                 except Exception as e:
                     result.status = ComparisonStatus.ERROR
                     result.error_message = str(e)
@@ -833,23 +836,18 @@ class VisualRegressionScannerApp(App):
         """
         self.sub_title = f"Scanning... {current}/{total}"
 
-    def on_results_table_result_highlighted(
-        self, event: ResultsTable.ResultHighlighted
-    ) -> None:
+    def on_results_table_result_highlighted(self, event: ResultsTable.ResultHighlighted) -> None:
         """Aktualisiert die Detail-Ansicht beim Cursor-Wechsel."""
         detail = self.query_one("#diff-detail", DiffDetailView)
         detail.show_result(event.result)
 
-    def on_results_table_result_selected(
-        self, event: ResultsTable.ResultSelected
-    ) -> None:
+    def on_results_table_result_selected(self, event: ResultsTable.ResultSelected) -> None:
         """Oeffnet den Detail-Dialog bei Enter/Doppelklick."""
         from .screens.diff_detail import DiffDetailScreen
+
         self.push_screen(DiffDetailScreen(event.result))
 
-    def on_diff_detail_view_open_images_requested(
-        self, event: DiffDetailView.OpenImagesRequested
-    ) -> None:
+    def on_diff_detail_view_open_images_requested(self, event: DiffDetailView.OpenImagesRequested) -> None:
         """Oeffnet die Bilder im Browser (Button in der Detail-Ansicht)."""
         self._open_images_for_result(event.result)
 
@@ -859,10 +857,7 @@ class VisualRegressionScannerApp(App):
             self.notify("Keine Ergebnisse vorhanden!", severity="warning")
             return
 
-        scanned = [
-            r for r in self._results
-            if r.status not in (ComparisonStatus.PENDING, ComparisonStatus.SCANNING)
-        ]
+        scanned = [r for r in self._results if r.status not in (ComparisonStatus.PENDING, ComparisonStatus.SCANNING)]
         if not scanned:
             self.notify("Noch keine Seiten gescannt!", severity="warning")
             return
@@ -916,6 +911,7 @@ class VisualRegressionScannerApp(App):
                 file_count += len(os.listdir(sub_dir))
 
         from .screens.reset_confirm import ResetConfirmScreen
+
         self.push_screen(
             ResetConfirmScreen(self._site_hostname, file_count),
             callback=self._on_reset_confirmed,
@@ -954,9 +950,7 @@ class VisualRegressionScannerApp(App):
             except Exception:
                 pass
 
-        self._write_log(
-            f"[yellow]Reset: {deleted_files} Dateien geloescht fuer {self._site_hostname}[/yellow]"
-        )
+        self._write_log(f"[yellow]Reset: {deleted_files} Dateien geloescht fuer {self._site_hostname}[/yellow]")
 
         # Ergebnisse zuruecksetzen
         self._results.clear()
@@ -977,7 +971,7 @@ class VisualRegressionScannerApp(App):
         log_widget.clear()
         self._log_lines.clear()
 
-        self._write_log(f"[bold]Reset abgeschlossen. Lade Sitemap neu...[/bold]")
+        self._write_log("[bold]Reset abgeschlossen. Lade Sitemap neu...[/bold]")
         self.notify(f"Reset: {deleted_files} Dateien geloescht")
 
         # Sitemap neu laden
@@ -1006,6 +1000,7 @@ class VisualRegressionScannerApp(App):
             return
 
         from .services.image_viewer import open_comparison_view
+
         path = open_comparison_view(result)
 
         if path:
@@ -1049,6 +1044,7 @@ class VisualRegressionScannerApp(App):
         """Fokussiert das Filter-Eingabefeld."""
         try:
             from textual.widgets import Input
+
             filter_input = self.query_one("#filter-bar", Input)
             filter_input.focus()
         except Exception:
@@ -1057,7 +1053,8 @@ class VisualRegressionScannerApp(App):
     def action_unfocus_filter(self) -> None:
         """Leert den Filter und gibt Focus zurueck an die Tabelle."""
         try:
-            from textual.widgets import Input, DataTable
+            from textual.widgets import DataTable, Input
+
             filter_input = self.query_one("#filter-bar", Input)
             filter_input.value = ""
             table = self.query_one("#results-data", DataTable)
@@ -1068,6 +1065,7 @@ class VisualRegressionScannerApp(App):
     def action_show_about(self) -> None:
         """Zeigt den About-Dialog an."""
         from .screens.about import AboutScreen
+
         self.push_screen(AboutScreen())
 
     def _write_log(self, line: str) -> None:

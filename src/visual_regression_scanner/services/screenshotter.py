@@ -6,11 +6,11 @@ import asyncio
 import hashlib
 import os
 import time
-from typing import Callable, Optional
+from collections.abc import Callable
 from urllib.parse import urlparse
 
 import httpx
-from playwright.async_api import async_playwright, Browser, BrowserContext, Page
+from playwright.async_api import Browser, Page, async_playwright
 
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 
@@ -38,7 +38,7 @@ class Screenshotter:
         timeout: int = 30,
         headless: bool = True,
         user_agent: str = "",
-        cookies: Optional[list[dict[str, str]]] = None,
+        cookies: list[dict[str, str]] | None = None,
         viewport_width: int = 1920,
         viewport_height: int = 1080,
         full_page: bool = True,
@@ -52,16 +52,16 @@ class Screenshotter:
         self.viewport_height = viewport_height
         self.full_page = full_page
         self._cancelled = False
-        self._browser: Optional[Browser] = None
+        self._browser: Browser | None = None
         self._playwright = None
 
     async def capture_urls(
         self,
         results: list[ScreenshotResult],
         output_dir: str,
-        on_result: Optional[Callable[[ScreenshotResult], None]] = None,
-        on_log: Optional[Callable[[str], None]] = None,
-        on_progress: Optional[Callable[[int, int], None]] = None,
+        on_result: Callable[[ScreenshotResult], None] | None = None,
+        on_log: Callable[[str], None] | None = None,
+        on_progress: Callable[[int, int], None] | None = None,
     ) -> list[ScreenshotResult]:
         """Erstellt Screenshots aller URLs parallel mit Semaphore-Begrenzung.
 
@@ -123,10 +123,7 @@ class Screenshotter:
                     status_text = result.status_icon
                     log(f"  [{status_text}] {result.url} ({result.load_time_ms / 1000:.1f}s)")
 
-            tasks = [
-                capture_with_semaphore(result, idx)
-                for idx, result in enumerate(results)
-            ]
+            tasks = [capture_with_semaphore(result, idx) for idx, result in enumerate(results)]
             await asyncio.gather(*tasks, return_exceptions=True)
 
         except Exception as e:
@@ -159,7 +156,7 @@ class Screenshotter:
                 error_msg = str(e)
 
                 if attempt < self.MAX_RETRIES - 1:
-                    wait_time = self.BACKOFF_BASE_SECONDS * (2 ** attempt)
+                    wait_time = self.BACKOFF_BASE_SECONDS * (2**attempt)
                     log(f"  Retry {attempt + 1}/{self.MAX_RETRIES} fuer {result.url} in {wait_time}s ({error_msg})")
 
                     # Netzwerk-Check vor Retry
@@ -313,26 +310,26 @@ class Screenshotter:
         consent_selectors = [
             # Usercentrics Buttons
             '[data-testid="uc-accept-all-button"]',
-            '#uc-btn-accept-banner',
-            '.uc-btn-accept',
+            "#uc-btn-accept-banner",
+            ".uc-btn-accept",
             # OneTrust Buttons
-            '#onetrust-accept-btn-handler',
-            '.onetrust-close-btn-handler',
+            "#onetrust-accept-btn-handler",
+            ".onetrust-close-btn-handler",
             # CookieBot Buttons
-            '#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll',
-            '#CybotCookiebotDialogBodyButtonAccept',
+            "#CybotCookiebotDialogBodyLevelButtonLevelOptinAllowAll",
+            "#CybotCookiebotDialogBodyButtonAccept",
             # Generische Consent-Buttons
-            '[data-cookie-accept]',
-            '[data-consent-accept]',
+            "[data-cookie-accept]",
+            "[data-consent-accept]",
             'button[class*="accept"]',
             'button[class*="consent"]',
             'a[class*="accept"]',
-            '.cookie-accept',
-            '.cookie-consent-accept',
-            '#cookie-accept',
-            '#accept-cookies',
-            '.cc-accept',
-            '.cc-btn.cc-allow',
+            ".cookie-accept",
+            ".cookie-consent-accept",
+            "#cookie-accept",
+            "#accept-cookies",
+            ".cc-accept",
+            ".cc-btn.cc-allow",
         ]
 
         clicked = False

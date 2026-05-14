@@ -10,11 +10,10 @@ from textual.screen import ModalScreen
 from textual.widget import Widget
 from textual.widgets import Button, Static
 
-
 # Rueckgabewerte des Dialogs
-SCAN_REPLACE = "replace"          # Option A: Nur neue Screenshots, Referenz bleibt
-SCAN_UPDATE_BASELINE = "update"   # Option B: Current → Referenz, dann neuer Scan
-SCAN_CANCEL = None                # Abgebrochen
+SCAN_REPLACE = "replace"  # Option A: Nur neue Screenshots, Referenz bleibt
+SCAN_UPDATE_BASELINE = "update"  # Option B: Current → Referenz, dann neuer Scan
+SCAN_CANCEL = None  # Abgebrochen
 
 
 class _OptionWidget(Widget):

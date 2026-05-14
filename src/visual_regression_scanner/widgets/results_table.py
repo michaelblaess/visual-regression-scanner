@@ -2,12 +2,12 @@
 
 from __future__ import annotations
 
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Vertical
+from textual.message import Message
 from textual.reactive import reactive
 from textual.widgets import DataTable, Input, Static
-from textual.message import Message
-from rich.text import Text
 
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 
@@ -109,7 +109,9 @@ class ResultsTable(Vertical):
         self._filtered = []
         for r in self._results:
             if self._show_only_diffs and r.status not in (
-                ComparisonStatus.DIFF, ComparisonStatus.ERROR, ComparisonStatus.TIMEOUT
+                ComparisonStatus.DIFF,
+                ComparisonStatus.ERROR,
+                ComparisonStatus.TIMEOUT,
             ):
                 continue
             if search and search not in r.url.lower():
