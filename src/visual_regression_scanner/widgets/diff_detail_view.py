@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import os
 import platform
 import subprocess
@@ -141,10 +142,8 @@ class DiffDetailView(Widget):
     def _hide_file_rows(self) -> None:
         """Versteckt alle Datei-Zeilen."""
         for row_id in ("row-baseline", "row-screenshot", "row-diff"):
-            try:
+            with contextlib.suppress(Exception):
                 self.query_one(f"#{row_id}").display = False
-            except Exception:
-                pass
 
     def _update_file_rows(self, result: ScreenshotResult) -> None:
         """Aktualisiert die Datei-Zeilen mit Pfaden, Timestamps und Buttons.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import hashlib
 import os
 import time
@@ -359,7 +360,7 @@ class Screenshotter:
         Args:
             page: Die Playwright-Page.
         """
-        try:
+        with contextlib.suppress(Exception):
             await page.evaluate("""() => {
                 var selectors = [
                     '#usercentrics-root',
@@ -397,8 +398,6 @@ class Screenshotter:
                 document.body.style.overflow = '';
                 document.documentElement.style.overflow = '';
             }""")
-        except Exception:
-            pass
 
     async def _trigger_lazy_loading(
         self,

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import hashlib
 import json
 import os
@@ -202,10 +203,8 @@ class VisualRegressionScannerApp(App):
         """Wendet das Scan-Label auf die Bindings an und refreshed den Footer."""
         label = self._get_scan_label()
         self._bindings.key_to_bindings["s"] = [Binding("s", "start_scan", label, show=True)]
-        try:
+        with contextlib.suppress(Exception):
             self.screen.refresh_bindings()
-        except Exception:
-            pass
 
     @work(exclusive=True)
     async def _load_sitemap(self) -> None:
@@ -395,10 +394,8 @@ class VisualRegressionScannerApp(App):
 
         def log(msg: str) -> None:
             """Thread-sichere Log-Ausgabe."""
-            try:
+            with contextlib.suppress(Exception):
                 self.call_from_thread(self._write_log, msg)
-            except Exception:
-                pass
 
         for idx, result in enumerate(self._results):
             # Counter aktualisieren (Timer liest diese Werte)
@@ -668,10 +665,13 @@ class VisualRegressionScannerApp(App):
         comparator = Comparator(threshold=self.threshold)
 
         for result in self._results:
-            if result.status not in (ComparisonStatus.MATCH, ComparisonStatus.DIFF, ComparisonStatus.NEW_BASELINE):
+            if result.status not in (
+                ComparisonStatus.MATCH,
+                ComparisonStatus.DIFF,
+                ComparisonStatus.NEW_BASELINE,
+            ) and result.status in (ComparisonStatus.ERROR, ComparisonStatus.TIMEOUT):
                 # Nur erfolgreich gescannte Seiten vergleichen
-                if result.status in (ComparisonStatus.ERROR, ComparisonStatus.TIMEOUT):
-                    continue
+                continue
 
             if not result.screenshot_path or not os.path.exists(result.screenshot_path):
                 continue
@@ -685,10 +685,8 @@ class VisualRegressionScannerApp(App):
                 result.baseline_path = saved
 
                 # Current-Datei loeschen - beim ersten Scan soll nur die Baseline existieren
-                try:
+                with contextlib.suppress(OSError):
                     os.remove(result.screenshot_path)
-                except OSError:
-                    pass
                 result.screenshot_path = ""
 
                 self._write_log(f"  [blue]NEU[/blue] {result.url} (als Baseline gespeichert)")
@@ -770,13 +768,11 @@ class VisualRegressionScannerApp(App):
         if os.path.exists(self._baseline_dir):
             old_count = len([f for f in os.listdir(self._baseline_dir) if f.endswith(".png")])
             shutil.rmtree(self._baseline_dir)
-            try:
+            with contextlib.suppress(Exception):
                 self.call_from_thread(
                     self._write_log,
                     f"  Alte Referenz geloescht ({old_count} Bilder)",
                 )
-            except Exception:
-                pass
 
         os.makedirs(self._baseline_dir, exist_ok=True)
 
@@ -790,13 +786,11 @@ class VisualRegressionScannerApp(App):
                     shutil.move(src, dst)
                     moved += 1
 
-        try:
+        with contextlib.suppress(Exception):
             self.call_from_thread(
                 self._write_log,
                 f"  [green]{moved} Screenshots als neue Referenz gespeichert[/green]",
             )
-        except Exception:
-            pass
 
         # Diffs loeschen (sind nicht mehr gueltig)
         if os.path.exists(self._diffs_dir):
@@ -1075,10 +1069,8 @@ class VisualRegressionScannerApp(App):
             line: Log-Nachricht (kann Rich-Markup enthalten).
         """
         self._log_lines.append(line)
-        try:
+        with contextlib.suppress(Exception):
             self.query_one("#scan-log", RichLog).write(line)
-        except Exception:
-            pass
 
 
 def _extract_hostname(url: str) -> str:

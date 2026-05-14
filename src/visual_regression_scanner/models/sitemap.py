@@ -94,7 +94,7 @@ class SitemapParser:
         try:
             root = ET.fromstring(xml_content)
         except ET.ParseError as e:
-            raise SitemapError(f"Sitemap-XML konnte nicht geparst werden: {e}")
+            raise SitemapError(f"Sitemap-XML konnte nicht geparst werden: {e}") from e
 
         urls: list[str] = []
 
