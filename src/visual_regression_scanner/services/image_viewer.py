@@ -29,7 +29,7 @@ def open_comparison_view(result: ScreenshotResult) -> str | None:
     html = _build_viewer_html(result, images)
 
     # Temp-Datei erstellen und im Browser oeffnen
-    tmp = tempfile.NamedTemporaryFile(
+    tmp = tempfile.NamedTemporaryFile(  # noqa: SIM115 - intentional delete=False, file must outlive scope
         mode="w",
         suffix=".html",
         prefix="vrs_compare_",
