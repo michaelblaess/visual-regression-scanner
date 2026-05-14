@@ -3,10 +3,8 @@
 from __future__ import annotations
 
 import xml.etree.ElementTree as ET
-from urllib.parse import urlparse
 
 import httpx
-
 
 # Standard-Namespace fuer Sitemaps
 SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
@@ -75,7 +73,8 @@ class SitemapParser:
                 last_error = e
                 if attempt < max_retries - 1:
                     import asyncio
-                    wait_time = 5 * (2 ** attempt)
+
+                    wait_time = 5 * (2**attempt)
                     await asyncio.sleep(wait_time)
 
         raise SitemapError(f"Sitemap konnte nach {max_retries} Versuchen nicht geladen werden: {last_error}")
@@ -147,4 +146,5 @@ def _sanitize_url(url: str) -> str:
 
 class SitemapError(Exception):
     """Fehler beim Laden oder Parsen einer Sitemap."""
+
     pass

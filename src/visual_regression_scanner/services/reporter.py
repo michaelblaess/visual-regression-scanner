@@ -196,7 +196,7 @@ class Reporter:
             </tr>
         </thead>
         <tbody>
-            {''.join(result_rows)}
+            {"".join(result_rows)}
         </tbody>
     </table>
 
@@ -246,7 +246,7 @@ def _build_image_row(result: ScreenshotResult) -> str:
             f"<div class='image-box'>"
             f"<h3>Baseline</h3>"
             f"<img src='data:image/png;base64,{b64}' alt='Baseline' "
-            f"onclick=\"showFullscreen(this.src)\">"
+            f'onclick="showFullscreen(this.src)">'
             f"</div>"
         )
 
@@ -257,7 +257,7 @@ def _build_image_row(result: ScreenshotResult) -> str:
             f"<div class='image-box'>"
             f"<h3>Aktuell</h3>"
             f"<img src='data:image/png;base64,{b64}' alt='Aktuell' "
-            f"onclick=\"showFullscreen(this.src)\">"
+            f'onclick="showFullscreen(this.src)">'
             f"</div>"
         )
 
@@ -268,7 +268,7 @@ def _build_image_row(result: ScreenshotResult) -> str:
             f"<div class='image-box'>"
             f"<h3>Diff ({result.diff_percentage:.2f}%)</h3>"
             f"<img src='data:image/png;base64,{b64}' alt='Diff' "
-            f"onclick=\"showFullscreen(this.src)\">"
+            f'onclick="showFullscreen(this.src)">'
             f"</div>"
         )
 
@@ -317,8 +317,7 @@ def _html_escape(text: str) -> str:
         HTML-sicherer Text.
     """
     return (
-        text
-        .replace("&", "&amp;")
+        text.replace("&", "&amp;")
         .replace("<", "&lt;")
         .replace(">", "&gt;")
         .replace('"', "&quot;")

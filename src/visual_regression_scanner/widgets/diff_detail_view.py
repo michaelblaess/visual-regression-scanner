@@ -129,9 +129,7 @@ class DiffDetailView(Widget):
         """Leert die Detail-Ansicht."""
         self._result = None
         content = self.query_one("#detail-content", Static)
-        content.update(
-            Text("Keine URL ausgewaehlt.\n\nWaehle eine URL in der Tabelle aus.", style="dim italic")
-        )
+        content.update(Text("Keine URL ausgewaehlt.\n\nWaehle eine URL in der Tabelle aus.", style="dim italic"))
         self._hide_file_rows()
         self.query_one("#btn-open-images", Button).display = False
 
@@ -164,10 +162,12 @@ class DiffDetailView(Widget):
             if timestamp:
                 label += f"  ({timestamp})"
             info = self.query_one("#info-baseline", Static)
-            info.update(Text.assemble(
-                (f"{label}\n", "bold"),
-                (result.baseline_path, "dim"),
-            ))
+            info.update(
+                Text.assemble(
+                    (f"{label}\n", "bold"),
+                    (result.baseline_path, "dim"),
+                )
+            )
             self.query_one("#row-baseline").display = True
         else:
             self.query_one("#row-baseline").display = False
@@ -180,10 +180,12 @@ class DiffDetailView(Widget):
             if timestamp:
                 label += f"  ({timestamp})"
             info = self.query_one("#info-screenshot", Static)
-            info.update(Text.assemble(
-                (f"{label}\n", "bold"),
-                (result.screenshot_path, "dim"),
-            ))
+            info.update(
+                Text.assemble(
+                    (f"{label}\n", "bold"),
+                    (result.screenshot_path, "dim"),
+                )
+            )
             self.query_one("#row-screenshot").display = True
         else:
             self.query_one("#row-screenshot").display = False
@@ -192,10 +194,12 @@ class DiffDetailView(Widget):
         if result.diff_path and os.path.exists(result.diff_path):
             has_files = True
             info = self.query_one("#info-diff", Static)
-            info.update(Text.assemble(
-                ("Diff\n", "bold"),
-                (result.diff_path, "dim"),
-            ))
+            info.update(
+                Text.assemble(
+                    ("Diff\n", "bold"),
+                    (result.diff_path, "dim"),
+                )
+            )
             self.query_one("#row-diff").display = True
         else:
             self.query_one("#row-diff").display = False
