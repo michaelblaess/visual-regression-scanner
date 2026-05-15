@@ -1,5 +1,12 @@
 # Visual Regression Scanner
 
+<p align="center">
+  <img src="docs/flags/gb.svg" height="13" alt=""> <b>English</b> ·
+  <img src="docs/flags/de.svg" height="13" alt=""> <a href="README.de.md">Deutsch</a>
+</p>
+
+---
+
 [![Stars](https://img.shields.io/github/stars/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=fbbf24)](https://github.com/michaelblaess/visual-regression-scanner/stargazers)
 [![Forks](https://img.shields.io/github/forks/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=34d399)](https://github.com/michaelblaess/visual-regression-scanner/network/members)
 [![Issues](https://img.shields.io/github/issues/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=f87171)](https://github.com/michaelblaess/visual-regression-scanner/issues)
@@ -9,11 +16,11 @@
 [![License](https://img.shields.io/badge/license-Apache_2.0-3b82f6)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10+-3b82f6?logo=python&logoColor=white)](https://www.python.org/)
 
-TUI-Tool zur Erkennung visueller Regressionen auf Websites. Erstellt automatisch Full-Page-Screenshots aller Seiten einer Sitemap und vergleicht sie gegen gespeicherte Referenzen per Pixel-Diff.
+A TUI tool for detecting visual regressions on websites. It automatically creates full-page screenshots of all pages in a sitemap and compares them against stored references via pixel diff.
 
 ## Installation
 
-### One-Liner (Standalone, kein Python noetig)
+### One-Liner (standalone, no Python required)
 
 **Linux / macOS:**
 ```bash
@@ -27,154 +34,154 @@ irm https://raw.githubusercontent.com/michaelblaess/visual-regression-scanner/ma
 
 ## Features
 
-- **Automatische Screenshots** aller URLs aus einer XML-Sitemap
-- **Pixel-Diff-Vergleich** gegen gespeicherte Referenzen (Baselines)
-- **Konfigurierbare Schwelle** (Threshold) fuer erlaubte Abweichungen
-- **TUI** mit Live-Updates, Filter, Detail-Ansicht
-- **Dynamischer Scan-Button** - zeigt den aktuellen Zustand im Footer
-- **Ergebnis-Cache** (`results.json`) - vermeidet Neuberechnung beim Start
-- **HTML-Reports** mit eingebetteten Before/After/Diff-Bildern (Base64)
-- **JSON-Reports** fuer CI/CD-Integration
-- **Consent-Handling** (Usercentrics, OneTrust, CookieBot)
-- **Lazy-Loading-Erkennung** - scrollt Seiten durch und wartet auf Bilder
-- **Parallele Verarbeitung** mit konfigurierbarer Concurrency
+- **Automatic screenshots** of all URLs from an XML sitemap
+- **Pixel-diff comparison** against stored references (baselines)
+- **Configurable threshold** for permitted deviations
+- **TUI** with live updates, filter, detail view
+- **Dynamic scan button** - shows the current state in the footer
+- **Result cache** (`results.json`) - avoids recomputation on startup
+- **HTML reports** with embedded before/after/diff images (Base64)
+- **JSON reports** for CI/CD integration
+- **Consent handling** (Usercentrics, OneTrust, CookieBot)
+- **Lazy-loading detection** - scrolls through pages and waits for images
+- **Parallel processing** with configurable concurrency
 
 ## Setup
 
 ```bash
-# Einmalig: Setup ausfuehren
+# One-time: run setup
 setup.bat
 ```
 
-Das Setup erstellt eine virtuelle Umgebung, installiert alle Abhaengigkeiten und laedt Chromium herunter.
+The setup creates a virtual environment, installs all dependencies, and downloads Chromium.
 
-## Verwendung
+## Usage
 
 ```bash
-# TUI starten
+# Start the TUI
 run.bat https://example.com/sitemap.xml
 
-# Mit erhoehter Toleranz
+# With increased tolerance
 run.bat https://example.com/sitemap.xml --threshold 0.5
 
-# Kleinerer Viewport
+# Smaller viewport
 run.bat https://example.com/sitemap.xml --viewport 1280x720
 
-# HTML-Report automatisch speichern
+# Save HTML report automatically
 run.bat https://example.com/sitemap.xml --output-html report.html
 
-# Nur bestimmte URLs
+# Only specific URLs
 run.bat https://example.com/sitemap.xml --filter /produkte
 
-# Mit Auth-Cookie
+# With auth cookie
 run.bat https://example.com/sitemap.xml --cookie auth=token123
 ```
 
-## CLI-Parameter
+## CLI Parameters
 
-| Parameter | Default | Beschreibung |
+| Parameter | Default | Description |
 |-----------|---------|-------------|
-| `SITEMAP_URL` | - | URL der Sitemap (XML) |
-| `--screenshots-dir PATH` | `./screenshots` | Root-Verzeichnis (pro Site ein Unterordner) |
-| `--threshold FLOAT` | `0.1` | Diff-Schwelle in Prozent |
-| `--viewport WxH` | `1920x1080` | Viewport-Groesse |
-| `--concurrency N` | `4` | Max parallele Browser-Tabs |
-| `--timeout SEC` | `30` | Timeout pro Seite in Sekunden |
-| `--output-json PATH` | - | JSON-Report automatisch speichern |
-| `--output-html PATH` | - | HTML-Report automatisch speichern |
-| `--no-headless` | `false` | Browser sichtbar starten |
-| `--no-full-page` | `false` | Nur sichtbaren Bereich screenshotten |
-| `--filter TEXT` | - | Nur URLs die TEXT enthalten |
-| `--user-agent UA` | Chrome 131 | Custom User-Agent |
-| `--cookie NAME=VALUE` | - | Cookie setzen (mehrfach moeglich) |
+| `SITEMAP_URL` | - | URL of the sitemap (XML) |
+| `--screenshots-dir PATH` | `./screenshots` | Root directory (one subfolder per site) |
+| `--threshold FLOAT` | `0.1` | Diff threshold in percent |
+| `--viewport WxH` | `1920x1080` | Viewport size |
+| `--concurrency N` | `4` | Max parallel browser tabs |
+| `--timeout SEC` | `30` | Timeout per page in seconds |
+| `--output-json PATH` | - | Save JSON report automatically |
+| `--output-html PATH` | - | Save HTML report automatically |
+| `--no-headless` | `false` | Start browser visibly |
+| `--no-full-page` | `false` | Screenshot only the visible area |
+| `--filter TEXT` | - | Only URLs containing TEXT |
+| `--user-agent UA` | Chrome 131 | Custom user agent |
+| `--cookie NAME=VALUE` | - | Set cookie (can be used multiple times) |
 
-## Tastenkuerzel
+## Keyboard Shortcuts
 
-| Taste | Aktion |
+| Key | Action |
 |-------|--------|
-| `s` | Scan starten (dynamischer Text, siehe unten) |
-| `r` | Reset (alle Bilder loeschen + Sitemap neu laden) |
-| `R` | Reports speichern (HTML + JSON) |
-| `o` | Bilder im Browser oeffnen (Lightbox mit Zoom) |
-| `l` | Log ein/aus |
-| `e` | Nur Diffs anzeigen |
-| `+` / `-` | Log-Hoehe anpassen |
-| `/` | Filter fokussieren |
-| `c` | Log in Zwischenablage kopieren |
-| `i` | About-Dialog |
-| `q` | Beenden |
+| `s` | Start scan (dynamic text, see below) |
+| `r` | Reset (delete all images + reload sitemap) |
+| `R` | Save reports (HTML + JSON) |
+| `o` | Open images in browser (lightbox with zoom) |
+| `l` | Toggle log |
+| `e` | Show diffs only |
+| `+` / `-` | Adjust log height |
+| `/` | Focus filter |
+| `c` | Copy log to clipboard |
+| `i` | About dialog |
+| `q` | Quit |
 
-### Dynamischer Scan-Button
+### Dynamic Scan Button
 
-Der Text des Scan-Buttons (`s`) passt sich automatisch an den aktuellen Zustand an:
+The text of the scan button (`s`) adapts automatically to the current state:
 
-| Zustand | Button-Text |
+| State | Button Text |
 |---------|------------|
-| Keine Referenz vorhanden | `s Scan (Referenz erstellen)` |
-| Referenz vorhanden, keine Aufnahmen | `s Scan (vs. Referenz)` |
-| Referenz + Aufnahmen vorhanden | `s Scan (Modus waehlen)` |
+| No reference available | `s Scan (Referenz erstellen)` |
+| Reference available, no captures | `s Scan (vs. Referenz)` |
+| Reference + captures available | `s Scan (Modus waehlen)` |
 
 ## Workflow
 
-### Erster Scan (Referenz wird automatisch erstellt)
+### First scan (reference is created automatically)
 
 1. `run.bat https://example.com/sitemap.xml`
-2. Taste `s` - Footer zeigt "Scan (Referenz erstellen)"
-3. Screenshots werden erstellt und **automatisch** als Referenz gespeichert, Status "NEU"
-4. Danach zeigt der Footer "Scan (vs. Referenz)"
+2. Press `s` - footer shows "Scan (Referenz erstellen)"
+3. Screenshots are created and **automatically** saved as the reference, status "NEU"
+4. Afterwards the footer shows "Scan (vs. Referenz)"
 
-### Zweiter Scan (Vergleich gegen Referenz)
+### Second scan (comparison against the reference)
 
-1. Taste `s` - Footer zeigt "Scan (vs. Referenz)"
-2. Neue Screenshots werden erstellt und gegen die Referenz verglichen
-3. Ergebnis: "OK" (identisch) oder "DIFF" (visueller Unterschied)
-4. Danach zeigt der Footer "Scan (Modus waehlen)"
+1. Press `s` - footer shows "Scan (vs. Referenz)"
+2. New screenshots are created and compared against the reference
+3. Result: "OK" (identical) or "DIFF" (visual difference)
+4. Afterwards the footer shows "Scan (Modus waehlen)"
 
-### Folge-Scans (Referenz + Aufnahmen vorhanden)
+### Follow-up scans (reference + captures available)
 
-Wenn bereits Referenz-Bilder UND aktuelle Aufnahmen vorhanden sind,
-zeigt der Footer "Scan (Modus waehlen)" und beim Druecken von `s`
-erscheint ein Dialog mit zwei Optionen:
+When both reference images AND current captures already exist,
+the footer shows "Scan (Modus waehlen)" and pressing `s`
+opens a dialog with two options:
 
-**Option A: Erneut scannen**
-- Neue Screenshots ersetzen die aktuellen Aufnahmen
-- Die Referenz bleibt unveraendert
-- Vergleich: Neue Screenshots vs. bestehende Referenz
+**Option A: Scan again**
+- New screenshots replace the current captures
+- The reference remains unchanged
+- Comparison: new screenshots vs. existing reference
 
-**Option B: Referenz aktualisieren + scannen**
-- Die aktuellen Aufnahmen werden zur neuen Referenz
-- Alte Referenz wird geloescht
-- Neuer Scan erstellt neue Aufnahmen
-- Vergleich: Neue Screenshots vs. neue Referenz (= vorherige Aufnahmen)
+**Option B: Update reference + scan**
+- The current captures become the new reference
+- The old reference is deleted
+- A new scan creates new captures
+- Comparison: new screenshots vs. new reference (= previous captures)
 
-### Ergebnisse
+### Results
 
-- Status "OK" = kein Unterschied, "DIFF" = visuelle Aenderung
-- Taste `R` (Shift+R) - HTML-Report mit Before/After/Diff-Bildern
-- Taste `o` - Bilder im Browser oeffnen (Lightbox mit Zoom)
+- Status "OK" = no difference, "DIFF" = visual change
+- Press `R` (Shift+R) - HTML report with before/after/diff images
+- Press `o` - open images in browser (lightbox with zoom)
 
-### Ergebnis-Cache
+### Result Cache
 
-Nach jedem Scan werden die Vergleichs-Ergebnisse in einer `results.json`
-im Site-Verzeichnis gespeichert. Beim naechsten Start werden die Ergebnisse
-aus dem Cache geladen statt alle Diffs neu zu berechnen. Der Cache wird
-automatisch ungueltig wenn sich die Bild-Dateien geaendert haben.
+After each scan, the comparison results are stored in a `results.json`
+in the site directory. On the next start, the results are loaded
+from the cache instead of recomputing all diffs. The cache is
+automatically invalidated when the image files have changed.
 
-## Verzeichnisstruktur
+## Directory Structure
 
-Pro Site wird automatisch ein Unterverzeichnis basierend auf dem Hostnamen angelegt:
+A subdirectory based on the hostname is created automatically per site:
 
 ```
 screenshots/
   www.example.com/
-    baseline/            # Gespeicherte Referenz-Screenshots
-      metadata.json      # URL -> Dateiname Mapping, Zeitstempel
-      {url_hash}.png     # Referenz-Bilder (SHA256-Hash der URL)
-    current/             # Aktuelle Aufnahmen (letzter Scan)
+    baseline/            # Stored reference screenshots
+      metadata.json      # URL -> filename mapping, timestamps
+      {url_hash}.png     # Reference images (SHA256 hash of the URL)
+    current/             # Current captures (last scan)
       {url_hash}.png
-    diffs/               # Diff-Bilder (identisch gedimmt, Aenderungen rot)
+    diffs/               # Diff images (identical areas dimmed, changes in red)
       {url_hash}.png
-    results.json         # Ergebnis-Cache (Diff-Werte + Datei-Timestamps)
+    results.json         # Result cache (diff values + file timestamps)
   shop.example.com/
     baseline/
     current/
@@ -182,20 +189,20 @@ screenshots/
     results.json
 ```
 
-## Abhaengigkeiten
+## Dependencies
 
 - Python 3.10+
-- Textual (TUI-Framework)
-- Playwright (Browser-Automation)
-- Pillow (Bild-Vergleich)
-- httpx (HTTP-Client)
-- Rich (Formatierte Ausgabe)
+- Textual (TUI framework)
+- Playwright (browser automation)
+- Pillow (image comparison)
+- httpx (HTTP client)
+- Rich (formatted output)
 
-## Release erstellen
+## Creating a Release
 
 ```bash
 git tag v1.1.0
 git push origin v1.1.0
 ```
 
-GitHub Actions baut automatisch Executables fuer Windows, Linux und macOS.
+GitHub Actions automatically builds executables for Windows, Linux, and macOS.
