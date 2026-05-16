@@ -5,6 +5,8 @@ from __future__ import annotations
 import argparse
 import sys
 
+from textual_widgets import reset_terminal_title, set_terminal_title
+
 from visual_regression_scanner import __version__
 from visual_regression_scanner.app import VisualRegressionScannerApp
 
@@ -150,22 +152,27 @@ def main() -> None:
     # Full-Page: --no-full-page ueberschreibt --full-page
     full_page = not args.no_full_page
 
-    app = VisualRegressionScannerApp(
-        sitemap_url=args.sitemap_url,
-        screenshots_dir=args.screenshots_dir,
-        threshold=args.threshold,
-        full_page=full_page,
-        viewport=args.viewport,
-        concurrency=args.concurrency,
-        timeout=args.timeout,
-        output_json=args.output_json,
-        output_html=args.output_html,
-        headless=not args.no_headless,
-        url_filter=args.filter,
-        user_agent=args.user_agent,
-        cookies=cookies,
-    )
-    app.run()
+    # Terminal-Tab-Titel setzen - Textual macht das nicht selbst.
+    set_terminal_title(f"visual-regression-scanner v{__version__}")
+    try:
+        app = VisualRegressionScannerApp(
+            sitemap_url=args.sitemap_url,
+            screenshots_dir=args.screenshots_dir,
+            threshold=args.threshold,
+            full_page=full_page,
+            viewport=args.viewport,
+            concurrency=args.concurrency,
+            timeout=args.timeout,
+            output_json=args.output_json,
+            output_html=args.output_html,
+            headless=not args.no_headless,
+            url_filter=args.filter,
+            user_agent=args.user_agent,
+            cookies=cookies,
+        )
+        app.run()
+    finally:
+        reset_terminal_title()
 
 
 if __name__ == "__main__":
