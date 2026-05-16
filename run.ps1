@@ -1,13 +1,11 @@
-# Visual Regression Scanner - Startskript
-# Verwendung: .\run.ps1 SITEMAP_URL [OPTIONS]
-#
-# Nutzt die virtuelle Umgebung (.venv) falls vorhanden,
-# sonst das globale Python.
+#Requires -Version 5.1
+# run.ps1 - starts visual-regression-scanner from source.
+$ErrorActionPreference = "Stop"
+Set-Location $PSScriptRoot
 
-$venvPython = Join-Path $PSScriptRoot ".venv\Scripts\python.exe"
-
-if (Test-Path $venvPython) {
-    & $venvPython -m visual_regression_scanner @args
-} else {
-    python -m visual_regression_scanner @args
+if (-not (Test-Path ".venv")) {
+    Write-Host "Please run .\bootstrap.ps1 first." -ForegroundColor Red
+    exit 1
 }
+
+& ".venv\Scripts\python.exe" -m visual_regression_scanner @args
