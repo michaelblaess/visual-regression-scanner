@@ -3,7 +3,19 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
+
+# Frozen-EXE Erkennung (PyInstaller UND Nuitka):
+# PLAYWRIGHT_BROWSERS_PATH muss gesetzt werden BEVOR playwright importiert wird,
+# damit das gebundelte Chromium im "browsers"-Unterordner gefunden wird.
+# PyInstaller setzt sys.frozen, Nuitka setzt stattdessen __compiled__.
+_is_frozen = getattr(sys, "frozen", False) or "__compiled__" in globals()
+if _is_frozen:
+    _exe_dir = os.path.dirname(sys.executable)
+    _browsers_dir = os.path.join(_exe_dir, "browsers")
+    if os.path.isdir(_browsers_dir):
+        os.environ["PLAYWRIGHT_BROWSERS_PATH"] = _browsers_dir
 
 from textual_widgets import reset_terminal_title, set_terminal_title
 
