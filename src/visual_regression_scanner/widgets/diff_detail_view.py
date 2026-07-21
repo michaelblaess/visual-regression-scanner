@@ -7,6 +7,7 @@ import os
 import platform
 import subprocess
 from datetime import datetime
+from typing import Any
 
 from rich.text import Text
 from textual.app import ComposeResult
@@ -65,7 +66,7 @@ class DiffDetailView(Widget):
             super().__init__()
             self.result = result
 
-    def __init__(self, graphics: bool = False, **kwargs) -> None:
+    def __init__(self, graphics: bool = False, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._result: ScreenshotResult | None = None
         # Grafische Vorschau ist opt-in; ohne sie werden Halbbloecke gezeichnet.

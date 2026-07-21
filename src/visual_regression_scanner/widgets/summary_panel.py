@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from rich.text import Text
 from textual.app import RenderResult
 from textual.widget import Widget
@@ -22,7 +24,7 @@ class SummaryPanel(Widget):
     }
     """
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._sitemap_url: str = ""
         self._total_urls: int = 0

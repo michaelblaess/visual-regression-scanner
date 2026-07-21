@@ -6,6 +6,7 @@ import base64
 import os
 import tempfile
 import webbrowser
+from typing import Any
 
 from ..models.scan_result import ScreenshotResult
 
@@ -43,7 +44,7 @@ def open_comparison_view(result: ScreenshotResult) -> str | None:
     return tmp.name
 
 
-def _collect_images(result: ScreenshotResult) -> list[dict]:
+def _collect_images(result: ScreenshotResult) -> list[dict[str, Any]]:
     """Sammelt verfuegbare Bilder als Base64 mit Label.
 
     Args:
@@ -94,7 +95,7 @@ def _image_to_base64(path: str) -> str:
         return base64.b64encode(f.read()).decode("ascii")
 
 
-def _build_viewer_html(result: ScreenshotResult, images: list[dict]) -> str:
+def _build_viewer_html(result: ScreenshotResult, images: list[dict[str, Any]]) -> str:
     """Erzeugt das HTML fuer die Vergleichsansicht mit Lightbox.
 
     Args:

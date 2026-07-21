@@ -2,11 +2,14 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import Vertical
 from textual.message import Message
 from textual.reactive import reactive
+from textual.timer import Timer
 from textual.widgets import DataTable, Input, Static
 
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
@@ -57,13 +60,13 @@ class ResultsTable(Vertical):
     # Spinner-Frames fuer SCANNING-Status
     SPINNER_FRAMES = [">  ", ">> ", ">>>", " >>", "  >", "   "]
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._results: list[ScreenshotResult] = []
         self._filtered: list[ScreenshotResult] = []
         self._show_only_diffs: bool = False
         self._spinner_frame: int = 0
-        self._spinner_timer = None
+        self._spinner_timer: Timer | None = None
 
     def compose(self) -> ComposeResult:
         """Erstellt die Kind-Widgets."""
@@ -188,7 +191,7 @@ class ResultsTable(Vertical):
 
     def on_data_table_row_selected(self, event: DataTable.RowSelected) -> None:
         """Reagiert auf Enter/Klick auf eine Zeile."""
-        idx = int(event.row_key.value)
+        idx = int(event.row_key.value or 0)
         if 0 <= idx < len(self._filtered):
             self.post_message(self.ResultSelected(self._filtered[idx]))
 
@@ -196,7 +199,7 @@ class ResultsTable(Vertical):
         """Reagiert auf Cursor-Bewegung."""
         if event.row_key is None:
             return
-        idx = int(event.row_key.value)
+        idx = int(event.row_key.value or 0)
         if 0 <= idx < len(self._filtered):
             self.post_message(self.ResultHighlighted(self._filtered[idx]))
 
@@ -216,7 +219,7 @@ class ResultsTable(Vertical):
             return None
         try:
             row_key = table.coordinate_to_cell_key(table.cursor_coordinate).row_key
-            idx = int(row_key.value)
+            idx = int(row_key.value or 0)
             if 0 <= idx < len(self._filtered):
                 return self._filtered[idx]
         except Exception:

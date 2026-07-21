@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
@@ -59,7 +61,7 @@ class ResetConfirmScreen(ModalScreen[bool]):
         Binding("escape", "cancel", "Abbrechen", show=False),
     ]
 
-    def __init__(self, hostname: str, file_count: int, **kwargs) -> None:
+    def __init__(self, hostname: str, file_count: int, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._hostname = hostname
         self._file_count = file_count
