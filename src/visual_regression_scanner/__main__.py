@@ -37,10 +37,13 @@ Beispiele:
   visual-regression-scanner https://example.com/sitemap.xml --cookie auth=token123
 
 Tastenkuerzel in der TUI:
-  u = URL eingeben    s = Scan starten             r = Reset
-  R = Reports         o = Bilder oeffnen           c = Log kopieren
-  l = Log ein/aus     e = Nur Diffs                / = Filter
-  + / - = Log-Hoehe   i = Info                     q = Beenden
+  u = URL eingeben    c = Scan starten             s = Einstellungen
+  h = Verlauf         r = Reset                    R = Reports
+  o = Bilder im Browser                            l = Log ein/aus
+  e = Nur Diffs       / = Filter                   + / - = Log-Hoehe
+  i = Info            q = Beenden
+
+  Das Log kopieren, exportieren oder ausblenden: Rechtsklick im Log-Bereich.
 """
 
 
@@ -69,12 +72,12 @@ def _build_parser() -> argparse.ArgumentParser:
         "-d",
         default="./screenshots",
         metavar="PATH",
-        help="Root-Verzeichnis fuer Screenshots (default: ./screenshots). Pro Site wird ein Unterverzeichnis angelegt.",
+        help="Root-Verzeichnis für Screenshots (default: ./screenshots). Pro Site wird ein Unterverzeichnis angelegt.",
     )
     parser.add_argument(
         "--threshold",
         type=float,
-        default=0.1,
+        default=None,
         metavar="FLOAT",
         help="Diff-Schwelle in Prozent (default: 0.1)",
     )
@@ -92,26 +95,26 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument(
         "--viewport",
-        default="1920x1080",
+        default="",
         metavar="WIDTHxHEIGHT",
-        help="Viewport-Groesse (default: 1920x1080)",
+        help="Viewport-Größe (default: 1920x1080)",
     )
     parser.add_argument(
         "--concurrency",
         "-c",
         type=int,
-        default=4,
+        default=None,
         metavar="N",
-        help="Max parallele Browser-Tabs (default: 4)",
+        help="Max parallele Browser-Tabs (Vorgabe aus den Einstellungen: 4)",
     )
     parser.add_argument(
         "--rate-limit",
         type=int,
-        default=60,
+        default=None,
         metavar="N",
         help=(
             "Max. Seiten pro Minute (default: 60). Mit 0 laeuft der Scan ungebremst - "
-            "jede Seite wird fuer den Screenshot voll gerendert und belastet ein "
+            "jede Seite wird für den Screenshot voll gerendert und belastet ein "
             "Produktivsystem entsprechend"
         ),
     )
@@ -119,13 +122,13 @@ def _build_parser() -> argparse.ArgumentParser:
         "--ignore-robots",
         action="store_true",
         default=False,
-        help="robots.txt ignorieren (nur fuer eigene Seiten sinnvoll)",
+        help="robots.txt ignorieren (nur für eigene Seiten sinnvoll)",
     )
     parser.add_argument(
         "--timeout",
         "-t",
         type=int,
-        default=30,
+        default=None,
         metavar="SEC",
         help="Timeout pro Seite in Sekunden (default: 30)",
     )
@@ -184,13 +187,19 @@ def main() -> None:
     cookies = []
     for cookie_str in args.cookie:
         if "=" not in cookie_str:
-            print(f"Ungueltig: --cookie {cookie_str} (Format: NAME=VALUE)")
+            print(f"Ungültig: --cookie {cookie_str} (Format: NAME=VALUE)")
             sys.exit(1)
         name, value = cookie_str.split("=", 1)
         cookies.append({"name": name.strip(), "value": value.strip()})
 
-    # Full-Page: --no-full-page ueberschreibt --full-page
-    full_page = not args.no_full_page
+    # Full-Page: nur wenn ein Schalter angegeben wurde - sonst None, damit die
+    # gespeicherte Einstellung gilt.
+    if args.no_full_page:
+        full_page = False
+    elif args.full_page:
+        full_page = True
+    else:
+        full_page = None
 
     # Terminal-Tab-Titel setzen - Textual macht das nicht selbst.
     set_terminal_title(f"visual-regression-scanner v{__version__}")
@@ -210,7 +219,7 @@ def main() -> None:
             user_agent=args.user_agent,
             cookies=cookies,
             rate_per_minute=args.rate_limit,
-            respect_robots=not args.ignore_robots,
+            respect_robots=False if args.ignore_robots else None,
         )
         app.run()
     finally:

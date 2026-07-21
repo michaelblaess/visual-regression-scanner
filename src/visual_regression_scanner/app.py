@@ -10,7 +10,6 @@ import os
 import shutil
 import time
 from datetime import datetime
-from pathlib import Path
 from urllib.parse import urlparse
 
 from textual import work
@@ -18,19 +17,24 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
-from textual.widgets import Footer, Header, RichLog
+from textual.widgets import Footer, Header
 from textual_themes import register_all
 from textual_widgets import (
     DISCLAIMER_VERSION,
+    AboutScreen,
     DisclaimerScreen,
     DisclaimerStore,
+    HorizontalSplitter,
+    LogPanel,
     UrlInputScreen,
 )
 
 from . import __author__, __version__, __year__
 from .i18n import detect_language
+from .models.history import History, HistoryEntry
 from .models.robots import RobotsChecker
 from .models.scan_result import ComparisonStatus, ComparisonSummary, ScreenshotResult
+from .models.settings import SETTINGS_FILE, Settings, parse_cookies
 from .models.sitemap import SitemapError, SitemapParser
 from .services.baseline import BaselineManager
 from .services.comparator import Comparator
@@ -39,12 +43,6 @@ from .services.screenshotter import Screenshotter
 from .widgets.diff_detail_view import DiffDetailView
 from .widgets.results_table import ResultsTable
 from .widgets.summary_panel import SummaryPanel
-
-# Log-Hoehe: min/max/default (Zeilen)
-LOG_HEIGHT_DEFAULT = 15
-LOG_HEIGHT_MIN = 5
-LOG_HEIGHT_MAX = 35
-LOG_HEIGHT_STEP = 3
 
 
 class VisualRegressionScannerApp(App):
@@ -55,18 +53,17 @@ class VisualRegressionScannerApp(App):
 
     BINDINGS = [
         Binding("u", "enter_url", "URL eingeben"),
+        Binding("s", "show_settings", "Settings"),
+        Binding("h", "show_history", "History"),
         Binding("q", "quit", "Beenden"),
-        Binding("s", "start_scan", "Scan"),
+        Binding("c", "start_scan", "Scan"),
         Binding("r", "reset_site", "Reset"),
         Binding("R", "save_reports", "Report", key_display="R"),
         Binding("l", "toggle_log", "Log"),
         Binding("e", "toggle_diffs", "Nur Diffs"),
-        Binding("plus", "log_bigger", "Log +", key_display="+"),
-        Binding("minus", "log_smaller", "Log -", key_display="-"),
-        Binding("slash", "focus_filter", "Filter", key_display="/"),
+        Binding("slash", "focus_filter", "Filter", key_display="/", show=False),
         Binding("escape", "unfocus_filter", "Filter leeren", show=False),
         Binding("o", "open_images", "Bilder"),
-        Binding("c", "copy_log", "Log kopieren"),
         Binding("i", "show_about", "Info"),
     ]
 
@@ -74,13 +71,13 @@ class VisualRegressionScannerApp(App):
         self,
         sitemap_url: str = "",
         screenshots_dir: str = "./screenshots",
-        threshold: float = 0.1,
-        full_page: bool = True,
-        viewport: str = "1920x1080",
-        concurrency: int = 4,
-        rate_per_minute: int = 60,
-        respect_robots: bool = True,
-        timeout: int = 30,
+        threshold: float | None = None,
+        full_page: bool | None = None,
+        viewport: str = "",
+        concurrency: int | None = None,
+        rate_per_minute: int | None = None,
+        respect_robots: bool | None = None,
+        timeout: int | None = None,
         output_json: str = "",
         output_html: str = "",
         headless: bool = True,
@@ -94,27 +91,37 @@ class VisualRegressionScannerApp(App):
         # via Ctrl+P → "theme" auswaehlbar).
         register_all(self)
 
+        # Gespeicherte Einstellungen als Grundlage; Angaben auf der
+        # Kommandozeile haben Vorrang, ohne die Datei zu veraendern.
+        self._settings = Settings.load()
+        self._disclaimer = DisclaimerStore(SETTINGS_FILE.parent / "disclaimer.json")
+        self.theme = self._settings.theme
+
         self.sitemap_url = sitemap_url
         self.screenshots_dir = os.path.abspath(screenshots_dir)
-        self.threshold = threshold
-        self.full_page = full_page
-        self.viewport = viewport
-        self.concurrency = concurrency
+        self.threshold = threshold if threshold is not None else self._settings.threshold
+        self.full_page = full_page if full_page is not None else self._settings.full_page
+        self.viewport = viewport or self._settings.viewport
+        self.concurrency = concurrency if concurrency is not None else self._settings.concurrency
         # 0 = kein Limit; jede Seite wird fuer den Screenshot voll gerendert.
-        self.rate_per_minute = rate_per_minute
-        self.respect_robots = respect_robots
-        # Zustimmung zum Haftungshinweis im Benutzerverzeichnis.
-        self._disclaimer = DisclaimerStore(Path.home() / ".visual-regression-scanner" / "disclaimer.json")
-        self.timeout = timeout
+        self.rate_per_minute = (
+            rate_per_minute
+            if rate_per_minute is not None
+            else (self._settings.rate_per_minute if self._settings.rate_limit_enabled else 0)
+        )
+        self.respect_robots = respect_robots if respect_robots is not None else self._settings.respect_robots
+        self.timeout = timeout if timeout is not None else self._settings.timeout
         self.output_json = output_json
         self.output_html = output_html
-        self.headless = headless
+        # CLI --no-headless erzwingt sichtbar; sonst aus den Einstellungen.
+        self.headless = headless if not headless else (not self._settings.no_headless)
         self.url_filter = url_filter
-        self.user_agent = user_agent
-        self.cookies = cookies or []
+        self.user_agent = user_agent or self._settings.user_agent
+        self.cookies = cookies if cookies else parse_cookies(self._settings.cookies)
+        self.proxy_url = self._settings.proxy_url
 
         # Viewport parsen
-        parts = viewport.split("x")
+        parts = self.viewport.split("x")
         self.viewport_width = int(parts[0]) if len(parts) >= 2 else 1920
         self.viewport_height = int(parts[1]) if len(parts) >= 2 else 1080
 
@@ -131,7 +138,6 @@ class VisualRegressionScannerApp(App):
         self._scan_running: bool = False
         self._scan_start_time: float = 0
         self._log_lines: list[str] = []
-        self._log_height: int = LOG_HEIGHT_DEFAULT
 
         # Restore-Progress (fuer Spinner-Animation)
         self._restore_count: int = 0
@@ -148,11 +154,75 @@ class VisualRegressionScannerApp(App):
         with Horizontal(id="main-container"):
             with Vertical(id="left-panel"):
                 yield ResultsTable(id="results-table")
-                yield RichLog(id="scan-log", highlight=True, markup=True)
+                yield HorizontalSplitter(target_id="results-table", min_size=5, id="log-splitter")
+                yield LogPanel(
+                    id="scan-log",
+                    lang=detect_language(),
+                    export_name="visual-regression-scanner",
+                )
 
-            yield DiffDetailView(id="diff-detail")
+            yield DiffDetailView(graphics=self._settings.graphics_preview, id="diff-detail")
 
         yield Footer()
+
+    def action_show_history(self) -> None:
+        """Zeigt frueher gepruefte Sitemaps zur Auswahl."""
+        from .screens.history import HistoryScreen
+
+        self.push_screen(HistoryScreen(), callback=self._on_history_selected)
+
+    def _on_history_selected(self, entry: HistoryEntry | None) -> None:
+        """Uebernimmt die gewaehlte Sitemap und laedt sie."""
+        if entry is None or not entry.url:
+            return
+        self.sitemap_url = entry.url
+        self._write_log(f"Aus dem Verlauf: {entry.url}")
+        self._load_sitemap()
+
+    def action_show_settings(self) -> None:
+        """Oeffnet den Einstellungs-Dialog."""
+        from .screens.settings import ScannerSettingsScreen
+
+        self.push_screen(
+            ScannerSettingsScreen(self._settings.to_dict(), lang=detect_language()),
+            callback=self._on_settings_closed,
+        )
+
+    def _on_settings_closed(self, new_settings: dict[str, object] | None) -> None:
+        """Speichert die Aenderungen und uebernimmt sie fuer den naechsten Lauf.
+
+        Die Werte greifen ohne Neustart, weil sie erst beim Start eines Scans
+        gelesen werden. Ausgenommen ist die Sprache: sie wirkt erst beim
+        naechsten Programmstart, weil Beschriftungen bereits gezeichnet sind.
+        """
+        if new_settings is None:
+            return
+
+        for key, value in new_settings.items():
+            if hasattr(self._settings, key):
+                setattr(self._settings, key, value)
+        with contextlib.suppress(Exception):
+            self._settings.save()
+
+        self.threshold = self._settings.threshold
+        self.full_page = self._settings.full_page
+        self.viewport = self._settings.viewport
+        parts = self.viewport.split("x")
+        if len(parts) >= 2:
+            with contextlib.suppress(ValueError):
+                self.viewport_width = int(parts[0])
+                self.viewport_height = int(parts[1])
+        self.concurrency = self._settings.concurrency
+        self.rate_per_minute = self._settings.rate_per_minute if self._settings.rate_limit_enabled else 0
+        self.timeout = self._settings.timeout
+        self.respect_robots = self._settings.respect_robots
+        self.headless = not self._settings.no_headless
+        self.user_agent = self._settings.user_agent
+        self.cookies = parse_cookies(self._settings.cookies)
+        self.proxy_url = self._settings.proxy_url
+        if isinstance(new_settings.get("theme"), str):
+            with contextlib.suppress(Exception):
+                self.theme = str(new_settings["theme"])
 
     def _ask_disclaimer(self) -> None:
         """Holt den Haftungshinweis ein, solange er nicht (in dieser Fassung) bestaetigt ist."""
@@ -189,7 +259,7 @@ class VisualRegressionScannerApp(App):
         else:
             self._write_log(
                 f"[yellow]Kein Rate-Limit - bis zu {self.concurrency} Seiten gleichzeitig, "
-                f"so schnell wie das Ziel antwortet. Fuer Produktivsysteme --rate-limit "
+                f"so schnell wie das Ziel antwortet. Für Produktivsysteme --rate-limit "
                 f"verwenden.[/yellow]"
             )
 
@@ -250,7 +320,7 @@ class VisualRegressionScannerApp(App):
         )
 
         if has_baseline and has_current:
-            return "Scan (Modus waehlen)"
+            return "Scan (Modus wählen)"
         elif has_baseline:
             return "Scan (vs. Referenz)"
         else:
@@ -267,7 +337,7 @@ class VisualRegressionScannerApp(App):
     def _apply_scan_label(self) -> None:
         """Wendet das Scan-Label auf die Bindings an und refreshed den Footer."""
         label = self._get_scan_label()
-        self._bindings.key_to_bindings["s"] = [Binding("s", "start_scan", label, show=True)]
+        self._bindings.key_to_bindings["c"] = [Binding("c", "start_scan", label, show=True)]
         with contextlib.suppress(Exception):
             self.screen.refresh_bindings()
 
@@ -307,6 +377,15 @@ class VisualRegressionScannerApp(App):
 
         self._write_log(f"[green]{len(self._urls)} URLs geladen[/green]")
 
+        History.add(
+            HistoryEntry(
+                url=self.sitemap_url,
+                viewport=self.viewport,
+                threshold=self.threshold,
+                full_page=self.full_page,
+            )
+        )
+
         # robots.txt gilt fuer die SEITEN. Was eine Seite beim Rendern nachlaedt,
         # wird nicht geprueft: das liegt oft auf einer CDN-Domain mit eigener
         # robots.txt, und wer die Seite ausliefern darf, liefert sie mit aus.
@@ -318,7 +397,7 @@ class VisualRegressionScannerApp(App):
             if blocked:
                 self._write_log(
                     f"[yellow]robots.txt: {blocked} von {len(self._urls)} Seiten gesperrt "
-                    f"- werden uebersprungen[/yellow]"
+                    f"- werden übersprungen[/yellow]"
                 )
                 self._urls = allowed
             else:
@@ -343,7 +422,7 @@ class VisualRegressionScannerApp(App):
         self._results = [ScreenshotResult(url=url, threshold=self.threshold) for url in self._urls]
 
         # Vorherige Ergebnisse wiederherstellen (in Thread, blockiert nicht die TUI)
-        self._write_log("Pruefe vorherige Ergebnisse...")
+        self._write_log("Prüfe vorherige Ergebnisse...")
         self._restore_count = 0
         self._restore_total = len(self._urls)
         self._restore_restored = 0
@@ -447,7 +526,7 @@ class VisualRegressionScannerApp(App):
         frames = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
         self._spinner_idx = (self._spinner_idx + 1) % len(frames)
         spinner = frames[self._spinner_idx]
-        text = f"{spinner} Pruefe Ergebnisse... {self._restore_count}/{self._restore_total}"
+        text = f"{spinner} Prüfe Ergebnisse... {self._restore_count}/{self._restore_total}"
         if self._restore_restored > 0:
             text += f" ({self._restore_restored} wiederhergestellt)"
         self.sub_title = text
@@ -680,7 +759,7 @@ class VisualRegressionScannerApp(App):
         self._scan_start_time = time.monotonic()
 
         # Log einblenden
-        log_widget = self.query_one("#scan-log", RichLog)
+        log_widget = self.query_one("#scan-log", LogPanel)
         log_widget.remove_class("hidden")
         log_widget.clear()
         self._log_lines.clear()
@@ -817,6 +896,15 @@ class VisualRegressionScannerApp(App):
         summary_data = ComparisonSummary.from_results(self.sitemap_url, self._results, duration_ms)
         summary_data.viewport = self.viewport
 
+        # Die Zahlen stehen erst jetzt fest - der Eintrag entstand beim Laden.
+        with contextlib.suppress(Exception):
+            History.update_latest_stats(
+                self.sitemap_url,
+                pages=summary_data.total_urls,
+                changed=summary_data.diffs,
+                failed=summary_data.errors + summary_data.timeouts,
+            )
+
         self._write_log(f"\n[bold green]Scan abgeschlossen in {duration_ms / 1000:.1f}s[/bold green]")
         self._write_log(
             f"Ergebnis: {summary_data.matches} OK | "
@@ -860,7 +948,7 @@ class VisualRegressionScannerApp(App):
             with contextlib.suppress(Exception):
                 self.call_from_thread(
                     self._write_log,
-                    f"  Alte Referenz geloescht ({old_count} Bilder)",
+                    f"  Alte Referenz gelöscht ({old_count} Bilder)",
                 )
 
         os.makedirs(self._baseline_dir, exist_ok=True)
@@ -1020,9 +1108,9 @@ class VisualRegressionScannerApp(App):
                     count = len(os.listdir(sub_dir))
                     shutil.rmtree(sub_dir)
                     deleted_files += count
-                    self._write_log(f"  Geloescht: {sub_dir} ({count} Dateien)")
+                    self._write_log(f"  Gelöscht: {sub_dir} ({count} Dateien)")
                 except Exception as e:
-                    self._write_log(f"  [red]Fehler beim Loeschen von {sub_dir}: {e}[/red]")
+                    self._write_log(f"  [red]Fehler beim Löschen von {sub_dir}: {e}[/red]")
 
         # Cache-Datei loeschen
         cache_path = os.path.join(self._site_dir, self.RESULTS_CACHE_FILE)
@@ -1033,7 +1121,7 @@ class VisualRegressionScannerApp(App):
             except Exception:
                 pass
 
-        self._write_log(f"[yellow]Reset: {deleted_files} Dateien geloescht fuer {self._site_hostname}[/yellow]")
+        self._write_log(f"[yellow]Reset: {deleted_files} Dateien gelöscht für {self._site_hostname}[/yellow]")
 
         # Ergebnisse zuruecksetzen
         self._results.clear()
@@ -1050,12 +1138,12 @@ class VisualRegressionScannerApp(App):
         detail.clear()
 
         # Log leeren
-        log_widget = self.query_one("#scan-log", RichLog)
+        log_widget = self.query_one("#scan-log", LogPanel)
         log_widget.clear()
         self._log_lines.clear()
 
         self._write_log("[bold]Reset abgeschlossen. Lade Sitemap neu...[/bold]")
-        self.notify(f"Reset: {deleted_files} Dateien geloescht")
+        self.notify(f"Reset: {deleted_files} Dateien gelöscht")
 
         # Sitemap neu laden
         if self.sitemap_url:
@@ -1067,7 +1155,7 @@ class VisualRegressionScannerApp(App):
         result = table.get_selected_result()
 
         if not result:
-            self.notify("Keine URL ausgewaehlt!", severity="warning")
+            self.notify("Keine URL ausgewählt!", severity="warning")
             return
 
         self._open_images_for_result(result)
@@ -1087,36 +1175,14 @@ class VisualRegressionScannerApp(App):
         path = open_comparison_view(result)
 
         if path:
-            self._write_log(f"Bilder geoeffnet: {result.url}")
+            self._write_log(f"Bilder geöffnet: {result.url}")
         else:
-            self.notify("Keine Bilder verfuegbar!", severity="warning")
-
-    def action_copy_log(self) -> None:
-        """Kopiert das Log in die Zwischenablage."""
-        if not self._log_lines:
-            self.notify("Log ist leer.", severity="warning")
-            return
-
-        text = "\n".join(self._log_lines)
-        self.copy_to_clipboard(text)
-        self.notify(f"Log kopiert ({len(self._log_lines)} Zeilen)")
+            self.notify("Keine Bilder verfügbar!", severity="warning")
 
     def action_toggle_log(self) -> None:
         """Blendet den Log-Bereich ein/aus."""
-        log_widget = self.query_one("#scan-log", RichLog)
+        log_widget = self.query_one("#scan-log", LogPanel)
         log_widget.toggle_class("hidden")
-
-    def action_log_bigger(self) -> None:
-        """Vergroessert den Log-Bereich."""
-        self._log_height = min(self._log_height + LOG_HEIGHT_STEP, LOG_HEIGHT_MAX)
-        log_widget = self.query_one("#scan-log", RichLog)
-        log_widget.styles.height = self._log_height
-
-    def action_log_smaller(self) -> None:
-        """Verkleinert den Log-Bereich."""
-        self._log_height = max(self._log_height - LOG_HEIGHT_STEP, LOG_HEIGHT_MIN)
-        log_widget = self.query_one("#scan-log", RichLog)
-        log_widget.styles.height = self._log_height
 
     def action_toggle_diffs(self) -> None:
         """Wechselt zwischen alle/nur Diffs in der Tabelle."""
@@ -1146,10 +1212,26 @@ class VisualRegressionScannerApp(App):
             pass
 
     def action_show_about(self) -> None:
-        """Zeigt den About-Dialog an."""
-        from .screens.about import AboutScreen
-
-        self.push_screen(AboutScreen())
+        """Zeigt den Info-Dialog an."""
+        self.push_screen(
+            AboutScreen(
+                app_name="visual-regression-scanner",
+                version=__version__,
+                author=__author__,
+                release=__year__,
+                description=(
+                    "Erkennt visuelle Veränderungen auf Websites, indem es jede Seite der "
+                    "Sitemap aufnimmt und mit einer gespeicherten Referenz vergleicht.\n\n"
+                    "Abweichungen werden Pixel für Pixel ermittelt und ab einer einstellbaren "
+                    "Schwelle gemeldet - so fallen ungewollte Änderungen nach einem Deployment "
+                    "auf, bevor es jemand anderes bemerkt."
+                ),
+                license="Apache-2.0",
+                lang=detect_language(),
+                url="https://www.michaelblaess.de/",
+                homepage_url="https://github.com/michaelblaess/visual-regression-scanner",
+            )
+        )
 
     def _write_log(self, line: str) -> None:
         """Schreibt eine Zeile ins Log-Widget und in den Puffer.
@@ -1159,7 +1241,7 @@ class VisualRegressionScannerApp(App):
         """
         self._log_lines.append(line)
         with contextlib.suppress(Exception):
-            self.query_one("#scan-log", RichLog).write(line)
+            self.query_one("#scan-log", LogPanel).write(line)
 
 
 def _extract_hostname(url: str) -> str:
@@ -1217,8 +1299,8 @@ class _SitemapErrorScreen(ModalScreen):
     """
 
     BINDINGS = [
-        Binding("escape", "close", "Schliessen"),
-        Binding("q", "close", "Schliessen"),
+        Binding("escape", "close", "Schließen"),
+        Binding("q", "close", "Schließen"),
     ]
 
     def __init__(self, message: str, **kwargs) -> None:
@@ -1233,7 +1315,7 @@ class _SitemapErrorScreen(ModalScreen):
         with Vertical():
             yield Static("Fehler", id="error-title")
             yield Static(self._message, id="error-message")
-            yield Static("ESC = Schliessen", id="error-footer")
+            yield Static("ESC = Schließen", id="error-footer")
 
     def action_close(self) -> None:
         """Schliesst den Dialog."""
