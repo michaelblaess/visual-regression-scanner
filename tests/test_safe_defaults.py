@@ -39,11 +39,16 @@ class TestSafeDefaults:
 class TestCommandLineDefaults:
     """Die Vorgaben der Kommandozeile muessen zu denen der App passen."""
 
-    def test_cli_rate_limit_default(self) -> None:
+    def test_cli_without_rate_limit_leaves_it_to_the_settings(self) -> None:
+        """Ohne Angabe liefert die Kommandozeile None - dann gilt die Einstellung.
+
+        Ein fester Vorgabewert hier wuerde die gespeicherte Einstellung bei
+        jedem Start ueberschreiben und den Dialog wirkungslos machen.
+        """
         from visual_regression_scanner.__main__ import _build_parser
 
         args = _build_parser().parse_args([_SITEMAP])
-        assert args.rate_limit == 60
+        assert args.rate_limit is None
 
     def test_cli_respects_robots_by_default(self) -> None:
         from visual_regression_scanner.__main__ import _build_parser

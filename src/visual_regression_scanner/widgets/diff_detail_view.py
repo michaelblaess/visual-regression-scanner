@@ -16,6 +16,7 @@ from textual.widget import Widget
 from textual.widgets import Button, Static
 
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
+from .image_preview import ImagePreview
 
 
 class DiffDetailView(Widget):
@@ -64,30 +65,39 @@ class DiffDetailView(Widget):
             super().__init__()
             self.result = result
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, graphics: bool = False, **kwargs) -> None:
         super().__init__(**kwargs)
         self._result: ScreenshotResult | None = None
+        # Grafische Vorschau ist opt-in; ohne sie werden Halbbloecke gezeichnet.
+        self._graphics = graphics
 
     def compose(self) -> ComposeResult:
         """Erstellt das Widget-Layout."""
         with Vertical():
             yield Static(
-                Text("Keine URL ausgewaehlt.\n\nWaehle eine URL in der Tabelle aus.", style="dim italic"),
+                Text("Keine URL ausgewählt.\n\nWähle eine URL in der Tabelle aus.", style="dim italic"),
                 id="detail-content",
             )
 
             # Datei-Zeilen: Label + Pfad + Oeffnen-Button
             with Horizontal(classes="file-row", id="row-baseline"):
                 yield Static(id="info-baseline", classes="file-info")
-                yield Button("Oeffnen", id="btn-open-baseline", variant="default")
+                yield Button("Öffnen", id="btn-open-baseline", variant="default")
 
             with Horizontal(classes="file-row", id="row-screenshot"):
                 yield Static(id="info-screenshot", classes="file-info")
-                yield Button("Oeffnen", id="btn-open-screenshot", variant="default")
+                yield Button("Öffnen", id="btn-open-screenshot", variant="default")
 
             with Horizontal(classes="file-row", id="row-diff"):
                 yield Static(id="info-diff", classes="file-info")
-                yield Button("Oeffnen", id="btn-open-diff", variant="default")
+                yield Button("Öffnen", id="btn-open-diff", variant="default")
+
+            # Vorschau im Terminal: schneller Blick, ohne den Browser zu oeffnen.
+            with Horizontal(id="preview-switch"):
+                yield Button("Referenz", id="btn-view-baseline", variant="default")
+                yield Button("Aktuell", id="btn-view-screenshot", variant="default")
+                yield Button("Unterschied", id="btn-view-diff", variant="default")
+            yield ImagePreview(enabled_graphics=self._graphics, id="detail-preview")
 
             yield Button(
                 "Alle Bilder im Browser vergleichen",
@@ -99,6 +109,8 @@ class DiffDetailView(Widget):
         """Versteckt alle Buttons initial."""
         self._hide_file_rows()
         self.query_one("#btn-open-images", Button).display = False
+        with contextlib.suppress(Exception):
+            self.query_one("#detail-preview", ImagePreview).clear()
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Reagiert auf Button-Klicks.
@@ -114,6 +126,12 @@ class DiffDetailView(Widget):
             _open_file(self._result.screenshot_path)
         elif event.button.id == "btn-open-diff" and self._result:
             _open_file(self._result.diff_path)
+        elif event.button.id == "btn-view-baseline" and self._result:
+            self._preview(self._result.baseline_path)
+        elif event.button.id == "btn-view-screenshot" and self._result:
+            self._preview(self._result.screenshot_path)
+        elif event.button.id == "btn-view-diff" and self._result:
+            self._preview(self._result.diff_path)
 
     def show_result(self, result: ScreenshotResult) -> None:
         """Zeigt die Details eines Vergleichs-Ergebnisses.
@@ -125,14 +143,20 @@ class DiffDetailView(Widget):
         content = self.query_one("#detail-content", Static)
         content.update(self._build_text())
         self._update_file_rows(result)
+        self._preview(result.diff_path or result.screenshot_path or result.baseline_path)
 
     def clear(self) -> None:
         """Leert die Detail-Ansicht."""
         self._result = None
         content = self.query_one("#detail-content", Static)
-        content.update(Text("Keine URL ausgewaehlt.\n\nWaehle eine URL in der Tabelle aus.", style="dim italic"))
+        content.update(Text("Keine URL ausgewählt.\n\nWähle eine URL in der Tabelle aus.", style="dim italic"))
         self._hide_file_rows()
         self.query_one("#btn-open-images", Button).display = False
+
+    def _preview(self, path: str) -> None:
+        """Zeigt die angegebene Datei in der Vorschau, falls vorhanden."""
+        with contextlib.suppress(Exception):
+            self.query_one("#detail-preview", ImagePreview).show_image(path or None)
 
     def refresh_content(self) -> None:
         """Aktualisiert den Inhalt (z.B. bei Live-Updates waehrend Scan)."""
@@ -215,7 +239,7 @@ class DiffDetailView(Widget):
         """
         result = self._result
         if not result:
-            return Text("Keine URL ausgewaehlt.", style="dim italic")
+            return Text("Keine URL ausgewählt.", style="dim italic")
 
         text = Text()
 
@@ -279,7 +303,7 @@ class DiffDetailView(Widget):
         text.append("\n")
 
         # Pixel-Info
-        text.append("Geaenderte Pixel: ", style="bold")
+        text.append("Geänderte Pixel: ", style="bold")
         text.append(f"{result.diff_pixel_count:,}")
         text.append(f" von {result.total_pixel_count:,}", style="dim")
         text.append("\n")
