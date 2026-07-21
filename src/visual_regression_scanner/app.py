@@ -10,6 +10,7 @@ import os
 import shutil
 import time
 from datetime import datetime
+from pathlib import Path
 from urllib.parse import urlparse
 
 from textual import work
@@ -19,8 +20,16 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Footer, Header, RichLog
 from textual_themes import register_all
+from textual_widgets import (
+    DISCLAIMER_VERSION,
+    DisclaimerScreen,
+    DisclaimerStore,
+    UrlInputScreen,
+)
 
-from . import __version__, __year__
+from . import __author__, __version__, __year__
+from .i18n import detect_language
+from .models.robots import RobotsChecker
 from .models.scan_result import ComparisonStatus, ComparisonSummary, ScreenshotResult
 from .models.sitemap import SitemapError, SitemapParser
 from .services.baseline import BaselineManager
@@ -45,6 +54,7 @@ class VisualRegressionScannerApp(App):
     TITLE = f"Visual Regression Scanner v{__version__} ({__year__})"
 
     BINDINGS = [
+        Binding("u", "enter_url", "URL eingeben"),
         Binding("q", "quit", "Beenden"),
         Binding("s", "start_scan", "Scan"),
         Binding("r", "reset_site", "Reset"),
@@ -68,6 +78,8 @@ class VisualRegressionScannerApp(App):
         full_page: bool = True,
         viewport: str = "1920x1080",
         concurrency: int = 4,
+        rate_per_minute: int = 60,
+        respect_robots: bool = True,
         timeout: int = 30,
         output_json: str = "",
         output_html: str = "",
@@ -88,6 +100,11 @@ class VisualRegressionScannerApp(App):
         self.full_page = full_page
         self.viewport = viewport
         self.concurrency = concurrency
+        # 0 = kein Limit; jede Seite wird fuer den Screenshot voll gerendert.
+        self.rate_per_minute = rate_per_minute
+        self.respect_robots = respect_robots
+        # Zustimmung zum Haftungshinweis im Benutzerverzeichnis.
+        self._disclaimer = DisclaimerStore(Path.home() / ".visual-regression-scanner" / "disclaimer.json")
         self.timeout = timeout
         self.output_json = output_json
         self.output_html = output_html
@@ -137,6 +154,27 @@ class VisualRegressionScannerApp(App):
 
         yield Footer()
 
+    def _ask_disclaimer(self) -> None:
+        """Holt den Haftungshinweis ein, solange er nicht (in dieser Fassung) bestaetigt ist."""
+        if self._disclaimer.accepted_version == DISCLAIMER_VERSION:
+            return
+        self.push_screen(
+            DisclaimerScreen(
+                app_name=f"visual-regression-scanner {__version__}",
+                lang=detect_language(),
+                author=__author__,
+                footer=(f"© {__year__} {__author__} · github.com/michaelblaess/visual-regression-scanner"),
+            ),
+            callback=self._on_disclaimer,
+        )
+
+    def _on_disclaimer(self, accepted: bool | None) -> None:
+        """Ohne Zustimmung wird das Programm beendet - der Hinweis ist nicht optional."""
+        if not accepted:
+            self.exit()
+            return
+        self._disclaimer.record()
+
     def on_mount(self) -> None:
         """Initialisierung nach dem Starten."""
         self._write_log(f"[bold]Visual Regression Scanner v{__version__}[/bold]")
@@ -144,6 +182,18 @@ class VisualRegressionScannerApp(App):
             f"Concurrency: {self.concurrency} | Timeout: {self.timeout}s | "
             f"Threshold: {self.threshold}% | Viewport: {self.viewport}"
         )
+        # Last-Hinweis frueh ins Protokoll: ohne Limit haengt die Rate allein
+        # davon ab, wie schnell das Ziel antwortet.
+        if self.rate_per_minute > 0:
+            self._write_log(f"Rate-Limit aktiv: max. {self.rate_per_minute} Seiten/Minute")
+        else:
+            self._write_log(
+                f"[yellow]Kein Rate-Limit - bis zu {self.concurrency} Seiten gleichzeitig, "
+                f"so schnell wie das Ziel antwortet. Fuer Produktivsysteme --rate-limit "
+                f"verwenden.[/yellow]"
+            )
+
+        self._ask_disclaimer()
         self._write_log(f"Screenshots: {self.screenshots_dir}")
 
         # Focus auf die Tabelle setzen damit Footer-Bindings sofort sichtbar
@@ -157,6 +207,21 @@ class VisualRegressionScannerApp(App):
 
         if self.sitemap_url:
             self._load_sitemap()
+
+    def action_enter_url(self) -> None:
+        """Fragt eine Sitemap-URL ab und laedt sie - fuer den Start ohne Argument."""
+        self.push_screen(
+            UrlInputScreen(initial=self.sitemap_url, lang=detect_language()),
+            callback=self._on_url_entered,
+        )
+
+    def _on_url_entered(self, url: str | None) -> None:
+        """Uebernimmt die eingegebene URL und startet das Laden der Sitemap."""
+        if not url:
+            return
+        self.sitemap_url = url
+        self._write_log(f"Sitemap: {url}")
+        self._load_sitemap()
 
     def _get_scan_label(self) -> str:
         """Ermittelt den passenden Scan-Button-Text basierend auf dem Zustand.
@@ -241,6 +306,29 @@ class VisualRegressionScannerApp(App):
             return
 
         self._write_log(f"[green]{len(self._urls)} URLs geladen[/green]")
+
+        # robots.txt gilt fuer die SEITEN. Was eine Seite beim Rendern nachlaedt,
+        # wird nicht geprueft: das liegt oft auf einer CDN-Domain mit eigener
+        # robots.txt, und wer die Seite ausliefern darf, liefert sie mit aus.
+        if self.respect_robots:
+            robots = RobotsChecker()
+            await robots.load(self._urls[0], cookies=self.cookies)
+            allowed = [url for url in self._urls if robots.is_allowed(url)]
+            blocked = len(self._urls) - len(allowed)
+            if blocked:
+                self._write_log(
+                    f"[yellow]robots.txt: {blocked} von {len(self._urls)} Seiten gesperrt "
+                    f"- werden uebersprungen[/yellow]"
+                )
+                self._urls = allowed
+            else:
+                self._write_log("robots.txt beachtet - keine Seite gesperrt")
+            if not self._urls:
+                self._write_log("[yellow]Alle Seiten sind per robots.txt gesperrt.[/yellow]")
+                self.notify("Alle URLs durch robots.txt gesperrt!", severity="warning")
+                return
+        else:
+            self._write_log("robots.txt wird ignoriert (--ignore-robots)")
 
         # Hostname aus erster URL extrahieren fuer Site-Verzeichnis
         self._site_hostname = _extract_hostname(self._urls[0])
@@ -626,6 +714,7 @@ class VisualRegressionScannerApp(App):
 
         self._screenshotter = Screenshotter(
             concurrency=self.concurrency,
+            rate_per_minute=self.rate_per_minute,
             timeout=self.timeout,
             headless=self.headless,
             user_agent=self.user_agent,

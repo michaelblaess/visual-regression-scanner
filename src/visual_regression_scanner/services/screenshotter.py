@@ -14,6 +14,7 @@ import httpx
 from playwright.async_api import Browser, Page, async_playwright
 
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
+from .rate_limit import RateLimiter
 
 
 class Screenshotter:
@@ -43,6 +44,7 @@ class Screenshotter:
         viewport_width: int = 1920,
         viewport_height: int = 1080,
         full_page: bool = True,
+        rate_per_minute: int = 60,
     ) -> None:
         self.concurrency = concurrency
         self.timeout = timeout
@@ -52,6 +54,9 @@ class Screenshotter:
         self.viewport_width = viewport_width
         self.viewport_height = viewport_height
         self.full_page = full_page
+        # 0 = kein Limit. Jede Seite wird fuer den Screenshot vollstaendig
+        # gerendert und wiegt damit ein Vielfaches eines einfachen Abrufs.
+        self.rate_per_minute = rate_per_minute
         self._cancelled = False
         self._browser: Browser | None = None
         self._playwright = None
@@ -79,6 +84,9 @@ class Screenshotter:
         self._cancelled = False
         total = len(results)
         semaphore = asyncio.Semaphore(self.concurrency)
+        # Gewartet wird INNERHALB der Semaphore: so warten hoechstens
+        # `concurrency` Aufgaben am Limiter, der Rest haengt am Semaphore.
+        limiter = RateLimiter(self.rate_per_minute)
         completed = 0
 
         # Screenshot-Verzeichnis erstellen
@@ -107,6 +115,8 @@ class Screenshotter:
                 async with semaphore:
                     if self._cancelled:
                         return
+
+                    await limiter.acquire()
 
                     result.status = ComparisonStatus.SCANNING
                     if on_result:

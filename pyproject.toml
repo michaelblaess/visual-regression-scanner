@@ -33,6 +33,18 @@ dev = [
 [project.scripts]
 visual-regression-scanner = "visual_regression_scanner.__main__:main"
 
+[tool.mypy]
+python_version = "3.12"
+# Hinweis: Der poe-Task heisst "strict", laeuft aber im Standardmodus. Das
+# Aktivieren von strict bringt die vorhandene Codebasis erst einmal in die
+# Vollen und gehoert in einen eigenen Aufraeumschritt, nicht in einen
+# Feature-Release.
+
+[[tool.mypy.overrides]]
+# textual-widgets ist eine Git-Dependency ohne py.typed-Marker.
+module = ["textual_widgets.*"]
+ignore_missing_imports = true
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
