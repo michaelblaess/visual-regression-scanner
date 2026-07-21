@@ -56,9 +56,17 @@ def _capture_seconds(rate_per_minute: int, tmp_path, monkeypatch) -> float:  # t
 
 
 class TestCaptureRateLimit:
-    def test_unlimited_run_is_fast(self, tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
-        """Referenzlauf: ohne Limit ist der Durchlauf in Sekundenbruchteilen fertig."""
-        assert _capture_seconds(0, tmp_path, monkeypatch) < 1.0
+    def test_rate_limit_adds_waiting_time(self, tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
+        """Vergleicht gedrosselt gegen ungedrosselt - unabhaengig von der Maschine.
+
+        Eine absolute Obergrenze fuer den ungedrosselten Lauf waere flaky: auf
+        einem ausgelasteten CI-Runner dauert derselbe Lauf ein Vielfaches. Die
+        Wartezeit des Limiters kommt dagegen additiv obendrauf, egal wie langsam
+        die Maschine ist - der Abstand zwischen beiden Laeufen ist belastbar.
+        """
+        unlimited = _capture_seconds(0, tmp_path, monkeypatch)
+        limited = _capture_seconds(60, tmp_path, monkeypatch)  # 1 s Abstand, 5 Seiten
+        assert limited >= unlimited + 2.5
 
     def test_rate_limit_slows_the_run_down(self, tmp_path, monkeypatch) -> None:  # type: ignore[no-untyped-def]
         """1200/Minute = 50 ms Abstand; fuenf Seiten warten also mehrere Intervalle."""
