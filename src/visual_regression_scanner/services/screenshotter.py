@@ -168,7 +168,7 @@ class Screenshotter:
 
                 if attempt < self.MAX_RETRIES - 1:
                     wait_time = self.BACKOFF_BASE_SECONDS * (2**attempt)
-                    log(f"  Retry {attempt + 1}/{self.MAX_RETRIES} fuer {result.url} in {wait_time}s ({error_msg})")
+                    log(f"  Retry {attempt + 1}/{self.MAX_RETRIES} für {result.url} in {wait_time}s ({error_msg})")
 
                     # Netzwerk-Check vor Retry
                     if not await self._check_network():
