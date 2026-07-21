@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -12,7 +14,7 @@ from textual.widgets import Static
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 
 
-class DiffDetailScreen(ModalScreen):
+class DiffDetailScreen(ModalScreen[None]):
     """Modal-Dialog mit ausfuehrlichen Diff-Details einer URL."""
 
     DEFAULT_CSS = """
@@ -56,7 +58,7 @@ class DiffDetailScreen(ModalScreen):
         Binding("q", "close", "Schließen"),
     ]
 
-    def __init__(self, result: ScreenshotResult, **kwargs) -> None:
+    def __init__(self, result: ScreenshotResult, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._result = result
 

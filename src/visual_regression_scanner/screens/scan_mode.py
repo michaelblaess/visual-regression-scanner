@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
@@ -27,7 +29,7 @@ class _OptionWidget(Widget):
     }
     """
 
-    def __init__(self, text: Text, **kwargs) -> None:
+    def __init__(self, text: Text, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._text = text
 
@@ -95,7 +97,7 @@ class ScanModeScreen(ModalScreen[str | None]):
         Binding("escape", "cancel", "Abbrechen", show=False),
     ]
 
-    def __init__(self, baseline_count: int, current_count: int, **kwargs) -> None:
+    def __init__(self, baseline_count: int, current_count: int, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._baseline_count = baseline_count
         self._current_count = current_count

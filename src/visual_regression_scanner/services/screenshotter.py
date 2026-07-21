@@ -8,10 +8,11 @@ import hashlib
 import os
 import time
 from collections.abc import Callable
+from typing import Any, cast
 from urllib.parse import urlparse
 
 import httpx
-from playwright.async_api import Browser, Page, async_playwright
+from playwright.async_api import Browser, Page, Playwright, async_playwright
 
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 from .rate_limit import RateLimiter
@@ -59,7 +60,7 @@ class Screenshotter:
         self.rate_per_minute = rate_per_minute
         self._cancelled = False
         self._browser: Browser | None = None
-        self._playwright = None
+        self._playwright: Playwright | None = None
 
     async def capture_urls(
         self,
@@ -229,7 +230,7 @@ class Screenshotter:
                 }
                 for c in self.cookies
             ]
-            await context.add_cookies(cookie_list)
+            await context.add_cookies(cast("Any", cookie_list))
 
         page = await context.new_page()
 
@@ -483,7 +484,9 @@ class Screenshotter:
         Returns:
             Playwright Browser-Instanz.
         """
-        return await self._playwright.chromium.launch(
+        if self._playwright is None:  # pragma: no cover - Aufrufreihenfolge
+            raise RuntimeError("Playwright wurde nicht gestartet")
+        browser: Browser = await self._playwright.chromium.launch(
             headless=self.headless,
             args=[
                 "--disable-gpu",
@@ -491,6 +494,7 @@ class Screenshotter:
                 "--no-sandbox",
             ],
         )
+        return browser
 
     async def _check_network(self) -> bool:
         """Prueft ob das Netzwerk erreichbar ist.

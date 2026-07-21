@@ -10,6 +10,7 @@ import os
 import shutil
 import time
 from datetime import datetime
+from typing import Any, cast
 from urllib.parse import urlparse
 
 from textual import work
@@ -17,6 +18,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
+from textual.timer import Timer
 from textual.widgets import Footer, Header
 from textual_themes import register_all
 from textual_widgets import (
@@ -45,7 +47,7 @@ from .widgets.results_table import ResultsTable
 from .widgets.summary_panel import SummaryPanel
 
 
-class VisualRegressionScannerApp(App):
+class VisualRegressionScannerApp(App[None]):
     """TUI-Anwendung zum Erkennen visueller Regressionen auf Websites."""
 
     CSS_PATH = "app.tcss"
@@ -89,7 +91,7 @@ class VisualRegressionScannerApp(App):
 
         # Alle Retro-Themes aus textual-themes registrieren (31 Themes,
         # via Ctrl+P → "theme" auswaehlbar).
-        register_all(self)
+        register_all(cast("App[object]", self))
 
         # Gespeicherte Einstellungen als Grundlage; Angaben auf der
         # Kommandozeile haben Vorrang, ohne die Datei zu veraendern.
@@ -143,7 +145,7 @@ class VisualRegressionScannerApp(App):
         self._restore_count: int = 0
         self._restore_total: int = 0
         self._restore_restored: int = 0
-        self._restore_timer = None
+        self._restore_timer: Timer | None = None
         self._spinner_idx: int = 0
 
     def compose(self) -> ComposeResult:
@@ -467,7 +469,7 @@ class VisualRegressionScannerApp(App):
 
         cache_path = os.path.join(self._site_dir, self.RESULTS_CACHE_FILE)
 
-        cache_data = {
+        cache_data: dict[str, Any] = {
             "saved_at": datetime.now().isoformat(),
             "threshold": self.threshold,
             "viewport": self.viewport,
@@ -493,7 +495,8 @@ class VisualRegressionScannerApp(App):
                 os.path.getmtime(result.diff_path) if result.diff_path and os.path.exists(result.diff_path) else 0
             )
 
-            cache_data["results"].append(entry)
+            results_list: list[dict[str, Any]] = cache_data["results"]
+            results_list.append(entry)
 
         try:
             os.makedirs(self._site_dir, exist_ok=True)
@@ -502,7 +505,7 @@ class VisualRegressionScannerApp(App):
         except Exception:
             pass
 
-    def _load_results_cache(self) -> dict | None:
+    def _load_results_cache(self) -> dict[str, Any] | None:
         """Laedt den Ergebnis-Cache aus der JSON-Datei.
 
         Returns:
@@ -517,7 +520,8 @@ class VisualRegressionScannerApp(App):
 
         try:
             with open(cache_path, encoding="utf-8") as f:
-                return json.load(f)
+                cached_data: dict[str, Any] = json.load(f)
+                return cached_data
         except (json.JSONDecodeError, OSError):
             return None
 
@@ -547,7 +551,7 @@ class VisualRegressionScannerApp(App):
 
         # Cache laden
         cache = self._load_results_cache()
-        cache_by_url: dict[str, dict] = {}
+        cache_by_url: dict[str, dict[str, Any]] = {}
         if cache and cache.get("threshold") == self.threshold:
             for entry in cache.get("results", []):
                 url = entry.get("url", "")
@@ -658,7 +662,7 @@ class VisualRegressionScannerApp(App):
 
     @staticmethod
     def _is_cache_valid(
-        cached: dict,
+        cached: dict[str, Any],
         baseline_path: str,
         current_path: str,
         diff_path: str,
@@ -1088,7 +1092,7 @@ class VisualRegressionScannerApp(App):
             callback=self._on_reset_confirmed,
         )
 
-    def _on_reset_confirmed(self, confirmed: bool) -> None:
+    def _on_reset_confirmed(self, confirmed: bool | None) -> None:
         """Callback nach dem Bestaetigungsdialog.
 
         Args:
@@ -1259,7 +1263,7 @@ def _extract_hostname(url: str) -> str:
     return hostname.replace(":", "_").replace("/", "_")
 
 
-class _SitemapErrorScreen(ModalScreen):
+class _SitemapErrorScreen(ModalScreen[None]):
     """Modal-Dialog fuer Sitemap-Fehler."""
 
     DEFAULT_CSS = """
@@ -1303,7 +1307,7 @@ class _SitemapErrorScreen(ModalScreen):
         Binding("q", "close", "Schließen"),
     ]
 
-    def __init__(self, message: str, **kwargs) -> None:
+    def __init__(self, message: str, **kwargs: Any) -> None:
         super().__init__(**kwargs)
         self._message = message
 

@@ -6,7 +6,12 @@ import hashlib
 import json
 import os
 import shutil
+from collections.abc import Callable
 from datetime import datetime
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ..models.scan_result import ScreenshotResult
 
 
 class BaselineManager:
@@ -73,7 +78,7 @@ class BaselineManager:
         """
         return self.get_baseline_path(url) is not None
 
-    def get_metadata(self) -> dict:
+    def get_metadata(self) -> dict[str, Any]:
         """Laedt die Metadata-Datei.
 
         Returns:
@@ -89,7 +94,8 @@ class BaselineManager:
 
         try:
             with open(metadata_path, encoding="utf-8") as f:
-                return json.load(f)
+                loaded: dict[str, Any] = json.load(f)
+                return loaded
         except (json.JSONDecodeError, OSError):
             return {
                 "created": datetime.now().isoformat(),
@@ -97,7 +103,7 @@ class BaselineManager:
                 "urls": {},
             }
 
-    def save_metadata(self, metadata: dict) -> None:
+    def save_metadata(self, metadata: dict[str, Any]) -> None:
         """Speichert die Metadata-Datei.
 
         Args:
@@ -109,9 +115,9 @@ class BaselineManager:
 
     def update_all_baselines(
         self,
-        results: list,
+        results: list[ScreenshotResult],
         viewport: str = "",
-        on_log: callable = None,
+        on_log: Callable[[str], None] | None = None,
     ) -> int:
         """Aktualisiert alle Baselines aus den aktuellen Screenshots.
 
@@ -167,7 +173,10 @@ class BaselineManager:
             url_hash = self._url_to_hash(url)
             baseline_path = os.path.join(self.baseline_dir, f"{url_hash}.png")
             if os.path.exists(baseline_path):
-                metadata["urls"][url] = {
+                raw_urls = metadata.get("urls")
+                urls_entry: dict[str, Any] = raw_urls if isinstance(raw_urls, dict) else {}
+                metadata["urls"] = urls_entry
+                urls_entry[url] = {
                     "filename": f"{url_hash}.png",
                     "last_updated": datetime.now().isoformat(),
                 }

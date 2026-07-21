@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum
+from typing import Any
 
 
 class ComparisonStatus(Enum):
@@ -65,7 +66,7 @@ class ScreenshotResult:
         }
         return icons.get(self.status, "?")
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Konvertiert das Ergebnis in ein Dictionary."""
         return {
             "url": self.url,
@@ -84,7 +85,7 @@ class ScreenshotResult:
         }
 
     @classmethod
-    def from_dict(cls, data: dict) -> ScreenshotResult:
+    def from_dict(cls, data: dict[str, Any]) -> ScreenshotResult:
         """Erstellt ein ScreenshotResult aus einem Dictionary.
 
         Args:
@@ -174,7 +175,7 @@ class ComparisonSummary:
 
         return summary
 
-    def to_dict(self) -> dict:
+    def to_dict(self) -> dict[str, Any]:
         """Konvertiert die Zusammenfassung in ein Dictionary."""
         return {
             "sitemap_url": self.sitemap_url,

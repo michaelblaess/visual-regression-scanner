@@ -12,7 +12,7 @@ from textual.widgets import Button, DataTable, Static
 from ..models.history import History, HistoryEntry
 
 
-class HistoryScreen(ModalScreen[HistoryEntry | None]):  # type: ignore[misc]
+class HistoryScreen(ModalScreen[HistoryEntry | None]):
     """Zeigt frueher gepruefte Sitemaps zur Auswahl.
 
     Liefert den gewaehlten Eintrag zurueck oder None bei Abbruch.
