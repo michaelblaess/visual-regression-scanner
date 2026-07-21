@@ -13,6 +13,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
 
+from ..i18n import t
+
 logger = logging.getLogger(__name__)
 
 HISTORY_DIR = Path.home() / ".visual-regression-scanner"
@@ -96,7 +98,7 @@ class HistoryEntry:
         if not self.timestamp:
             return "?"
         try:
-            return datetime.fromisoformat(self.timestamp).strftime("%d.%m.%Y %H:%M")
+            return datetime.fromisoformat(self.timestamp).strftime(t("history.time_format"))
         except ValueError:
             return self.timestamp[:16].replace("T", " ")
 
@@ -105,11 +107,11 @@ class HistoryEntry:
         """Kurzfassung des Ergebnisses fuer die Auswahlliste."""
         if not self.total_pages:
             return "-"
-        parts = [f"{self.total_pages} Seiten"]
+        parts = [t("history.result.pages", count=self.total_pages)]
         if self.total_changed:
-            parts.append(f"{self.total_changed} geändert")
+            parts.append(t("history.result.changed", count=self.total_changed))
         if self.total_failed:
-            parts.append(f"{self.total_failed} Fehler")
+            parts.append(t("history.result.failed", count=self.total_failed))
         return ", ".join(parts)
 
 

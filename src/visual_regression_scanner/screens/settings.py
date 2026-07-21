@@ -16,6 +16,7 @@ from textual.widgets import Checkbox, Input, Label, Static, TabPane
 from textual_slider import Slider
 from textual_widgets import BaseSettingsScreen
 
+from ..i18n import t
 from ..models.settings import SETTINGS_FILE
 
 
@@ -42,42 +43,32 @@ class ScannerSettingsScreen(BaseSettingsScreen):  # type: ignore[misc]
 
     def app_tabs(self) -> ComposeResult:
         """Registerkarten fuer Aufnahme und Netzwerk."""
-        with TabPane("Aufnahme", id="settings-tab-capture"), VerticalScroll():
+        with TabPane(t("settings.tab.capture"), id="settings-tab-capture"), VerticalScroll():
             with Horizontal(classes="settings-row"):
-                yield Label("Diff-Schwelle (%)")
+                yield Label(t("settings.threshold"))
                 yield Input(
                     value=str(self._settings.get("threshold", 0.1)),
                     placeholder="0.1",
                     id="set-threshold",
                 )
-            yield Static(
-                "Ab wie viel Prozent geänderter Bildfläche eine Seite als Abweichung gilt. "
-                "Kleinere Werte finden mehr, melden aber auch Rendering-Rauschen (Schriftglättung, "
-                "Animationen).",
-                classes="hint",
-            )
+            yield Static(t("settings.threshold_hint"), classes="hint")
             with Horizontal(classes="settings-row"):
-                yield Label("Viewport (BxH)")
+                yield Label(t("settings.viewport"))
                 yield Input(
                     value=str(self._settings.get("viewport", "1920x1080")),
                     placeholder="1920x1080",
                     id="set-viewport",
                 )
             with Horizontal(classes="settings-row"):
-                yield Label("Ganze Seite")
+                yield Label(t("settings.full_page"))
                 yield Checkbox(
-                    "Vollbild statt nur des sichtbaren Bereichs",
+                    t("settings.full_page_check"),
                     value=bool(self._settings.get("full_page", True)),
                     id="set-full-page",
                 )
-            yield Static(
-                "An = die komplette Seite wird aufgenommen; dazu wird durch die Seite gescrollt, "
-                "damit nachgeladene Inhalte erscheinen. Das dauert laenger und erzeugt mehr Last "
-                "als eine Aufnahme des sichtbaren Bereichs.",
-                classes="hint",
-            )
+            yield Static(t("settings.full_page_hint"), classes="hint")
             with Horizontal(classes="settings-row"):
-                yield Label("Parallele Tabs")
+                yield Label(t("settings.concurrency"))
                 yield Input(
                     value=str(self._settings.get("concurrency", 4)),
                     placeholder="4",
@@ -87,25 +78,17 @@ class ScannerSettingsScreen(BaseSettingsScreen):  # type: ignore[misc]
             rate_on = bool(self._settings.get("rate_limit_enabled", True))
             rate_value = self._clamp(self._settings.get("rate_per_minute", 60), 60, 10, 240)
             with Horizontal(classes="settings-row"):
-                yield Label("Rate-Limit")
-                yield Checkbox("Aufrufe drosseln", value=rate_on, id="set-rate-on")
+                yield Label(t("settings.rate"))
+                yield Checkbox(t("settings.rate_check"), value=rate_on, id="set-rate-on")
             yield Static(
                 self._rate_label(rate_value),
                 id="rate-value",
                 classes="rate-value" if rate_on else "rate-value off",
             )
             yield Slider(min=10, max=240, step=10, value=rate_value, id="set-rate", disabled=not rate_on)
-            yield Static(
-                "Standardmäßig aktiv. Aus = der Scanner arbeitet so schnell, wie das Ziel "
-                'antwortet. "Parallele Tabs" begrenzt nur die Gleichzeitigkeit, nicht die Rate. '
-                "Für jeden Screenshot wird die Seite vollständig in einem echten Browser "
-                "gerendert - Skripte, Schriften und Bilder inklusive, am Zwischenspeicher des "
-                "Servers vorbei. Eine Seite wiegt damit ein Vielfaches eines einfachen Abrufs, "
-                "und ein Lauf fasst jede Seite der Sitemap an.",
-                classes="hint",
-            )
+            yield Static(t("settings.rate_hint"), classes="hint")
             with Horizontal(classes="settings-row"):
-                yield Label("Timeout (Sek.)")
+                yield Label(t("settings.timeout"))
                 yield Input(
                     value=str(self._settings.get("timeout", 30)),
                     placeholder="30",
@@ -113,67 +96,52 @@ class ScannerSettingsScreen(BaseSettingsScreen):  # type: ignore[misc]
                     type="integer",
                 )
             with Horizontal(classes="settings-row"):
-                yield Label("robots.txt")
+                yield Label(t("settings.robots"))
                 yield Checkbox(
-                    "robots.txt beachten",
+                    t("settings.robots_check"),
                     value=bool(self._settings.get("respect_robots", True)),
                     id="set-robots",
                 )
-            yield Static(
-                "An = per Disallow gesperrte Seiten aus der Sitemap werden übersprungen (die "
-                "Anzahl steht im Log). Aus nur für Deine eigenen Systeme sinnvoll, etwa wenn ein "
-                "Testsystem pauschal alles sperrt.",
-                classes="hint",
-            )
+            yield Static(t("settings.robots_hint"), classes="hint")
             with Horizontal(classes="settings-row"):
-                yield Label("Bildvorschau")
+                yield Label(t("settings.graphics"))
                 yield Checkbox(
-                    "Grafische Vorschau (Sixel/TGP)",
+                    t("settings.graphics_check"),
                     value=bool(self._settings.get("graphics_preview", False)),
                     id="set-graphics",
                 )
-            yield Static(
-                "Neustart nötig. Aus = die Vorschau wird aus Unicode-Halbblöcken aufgebaut und "
-                "rendert auf jedem Terminal sicher. An = pixelgenaue Darstellung, falls Dein "
-                "Terminal Sixel oder das Kitty-Protokoll beherrscht.",
-                classes="hint",
-            )
+            yield Static(t("settings.graphics_hint"), classes="hint")
             with Horizontal(classes="settings-row"):
-                yield Label("Browser sichtbar")
+                yield Label(t("settings.no_headless"))
                 yield Checkbox(
-                    "Browser-Fenster anzeigen (Fehlersuche)",
+                    t("settings.no_headless_check"),
                     value=bool(self._settings.get("no_headless", False)),
                     id="set-no-headless",
                 )
 
-        with TabPane("Netzwerk", id="settings-tab-network"), VerticalScroll():
+        with TabPane(t("settings.tab.network"), id="settings-tab-network"), VerticalScroll():
             with Horizontal(classes="settings-row"):
-                yield Label("Proxy-URL")
+                yield Label(t("settings.proxy"))
                 yield Input(
                     value=str(self._settings.get("proxy_url", "")),
                     placeholder="http://proxy-host:port",
                     id="set-proxy",
                 )
             with Horizontal(classes="settings-row"):
-                yield Label("User-Agent")
+                yield Label(t("settings.user_agent"))
                 yield Input(
                     value=str(self._settings.get("user_agent", "")),
-                    placeholder="leer = eingebauter Chrome-Wert",
+                    placeholder=t("settings.user_agent_placeholder"),
                     id="set-user-agent",
                 )
             with Horizontal(classes="settings-row"):
-                yield Label("Cookies")
+                yield Label(t("settings.cookies"))
                 yield Input(
                     value=str(self._settings.get("cookies", "")),
-                    placeholder="name=wert, name2=wert2",
+                    placeholder=t("settings.cookies_placeholder"),
                     id="set-cookies",
                 )
-            yield Static(
-                "Cookies werden vor der Aufnahme gesetzt - nützlich für geschützte Testsysteme "
-                "oder um ein Zustimmungsbanner zu überspringen, das sonst jeden Screenshot "
-                "verdeckt.",
-                classes="hint",
-            )
+            yield Static(t("settings.cookies_hint"), classes="hint")
 
     @staticmethod
     def _clamp(value: object, default: int, lo: int, hi: int) -> int:
@@ -187,14 +155,14 @@ class ScannerSettingsScreen(BaseSettingsScreen):  # type: ignore[misc]
     def _rate_label(per_minute: int) -> str:
         """Uebersetzt die Reglerstellung in Klartext (Zahl + Einordnung)."""
         if per_minute <= 30:
-            step = "sehr schonend"
+            step = t("settings.rate_step.gentle")
         elif per_minute <= 90:
-            step = "schonend, für Produktivsysteme empfohlen"
+            step = t("settings.rate_step.recommended")
         elif per_minute <= 150:
-            step = "zügig"
+            step = t("settings.rate_step.fast")
         else:
-            step = "ohne Rücksicht, nur für Test-/Entwicklungssysteme"
-        return f"{per_minute} Seiten/Minute - {step}"
+            step = t("settings.rate_step.reckless")
+        return t("settings.rate_label", per_minute=per_minute, step=step)
 
     @on(Slider.Changed, "#set-rate")
     def _on_rate_changed(self, event: Slider.Changed) -> None:
@@ -227,8 +195,8 @@ class ScannerSettingsScreen(BaseSettingsScreen):  # type: ignore[misc]
     def storage_paths(self) -> list[tuple[str, Path]]:
         """Liefert die Speicherorte fuer die Registerkarte der Basis."""
         return [
-            ("Einstellungen", SETTINGS_FILE),
-            ("Zustimmung Haftungshinweis", SETTINGS_FILE.parent / "disclaimer.json"),
+            (t("settings.storage.settings"), SETTINGS_FILE),
+            (t("settings.storage.disclaimer"), SETTINGS_FILE.parent / "disclaimer.json"),
         ]
 
     def _int(self, selector: str, default: int, minimum: int = 1) -> int:

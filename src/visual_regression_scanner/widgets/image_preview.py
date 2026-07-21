@@ -23,6 +23,8 @@ from textual.containers import VerticalScroll
 from textual.widget import Widget
 from textual.widgets import Static
 
+from ..i18n import t
+
 _UPPER_HALF_BLOCK = "▀"
 
 
@@ -136,7 +138,7 @@ class ImagePreview(Widget):
 
     def compose(self) -> ComposeResult:
         with VerticalScroll():
-            yield Static("Keine Aufnahme ausgewählt.", classes="preview-hint", id="preview-body")
+            yield Static(t("preview.none"), classes="preview-hint", id="preview-body")
 
     def show_image(self, path: str | Path | None) -> None:
         """Zeigt die angegebene Bilddatei an.
@@ -149,12 +151,12 @@ class ImagePreview(Widget):
         self._clear(container)
 
         if path is None:
-            container.mount(Static("Keine Aufnahme ausgewählt.", classes="preview-hint"))
+            container.mount(Static(t("preview.none"), classes="preview-hint"))
             return
 
         file_path = Path(path)
         if not file_path.is_file():
-            container.mount(Static(f"Datei fehlt: {file_path.name}", classes="preview-hint"))
+            container.mount(Static(t("preview.missing", name=file_path.name), classes="preview-hint"))
             return
 
         self._current = file_path
@@ -172,7 +174,7 @@ class ImagePreview(Widget):
         try:
             container.mount(Static(render_half_blocks(file_path, width, height)))
         except Exception:  # noqa: BLE001 - ein kaputtes Bild darf die App nicht beenden
-            container.mount(Static(f"Bild nicht lesbar: {file_path.name}", classes="preview-hint"))
+            container.mount(Static(t("preview.unreadable", name=file_path.name), classes="preview-hint"))
 
     def clear(self) -> None:
         """Leert die Anzeige."""

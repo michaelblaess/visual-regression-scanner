@@ -12,6 +12,7 @@ from pathlib import Path
 
 import pytest
 
+from visual_regression_scanner import i18n
 from visual_regression_scanner.models import settings as settings_module
 
 
@@ -22,3 +23,13 @@ def _isolated_settings(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
     monkeypatch.setattr(settings_module, "SETTINGS_DIR", tmp_path)
     monkeypatch.setattr(settings_module, "SETTINGS_FILE", path)
     return path
+
+
+@pytest.fixture(autouse=True)
+def _german_locale() -> None:
+    """Setzt fuer jeden Test die deutsche Sprachdatei.
+
+    Ohne das haengen Texte an der Systemsprache des Rechners, auf dem die Tests
+    gerade laufen - und die Erwartungen in den Tests waeren nicht mehr stabil.
+    """
+    i18n.load_locale("de")

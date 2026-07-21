@@ -8,6 +8,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 
+from ..i18n import t
 from ..models.scan_result import ComparisonStatus, ComparisonSummary, ScreenshotResult
 
 
@@ -149,37 +150,36 @@ class Reporter:
 <body>
     <h1>Visual Regression Report</h1>
     <p class="timestamp">
-        Erstellt: {timestamp} | Sitemap: {_html_escape(summary.sitemap_url)} |
-        Threshold: {summary.threshold}% | Viewport: {summary.viewport}
+        {t("report.created", timestamp=timestamp, sitemap=_html_escape(summary.sitemap_url), threshold=summary.threshold, viewport=summary.viewport)}
     </p>
 
     <div class="summary">
         <div class="summary-card">
-            <div class="label">URLs gesamt</div>
+            <div class="label">{t("report.total_urls")}</div>
             <div class="value">{summary.total_urls}</div>
         </div>
         <div class="summary-card">
-            <div class="label">OK</div>
+            <div class="label">{t("report.ok")}</div>
             <div class="value ok">{summary.matches}</div>
         </div>
         <div class="summary-card">
-            <div class="label">Diffs</div>
+            <div class="label">{t("report.diffs")}</div>
             <div class="value {"error" if summary.diffs > 0 else "ok"}">{summary.diffs}</div>
         </div>
         <div class="summary-card">
-            <div class="label">Neue</div>
+            <div class="label">{t("report.new")}</div>
             <div class="value {"info" if summary.new_baselines > 0 else "ok"}">{summary.new_baselines}</div>
         </div>
         <div class="summary-card">
-            <div class="label">Fehler</div>
+            <div class="label">{t("report.errors")}</div>
             <div class="value {"error" if summary.errors > 0 else "ok"}">{summary.errors}</div>
         </div>
         <div class="summary-card">
-            <div class="label">Timeouts</div>
+            <div class="label">{t("report.timeouts")}</div>
             <div class="value {"warning" if summary.timeouts > 0 else "ok"}">{summary.timeouts}</div>
         </div>
         <div class="summary-card">
-            <div class="label">Dauer</div>
+            <div class="label">{t("report.duration")}</div>
             <div class="value">{duration_s:.1f}s</div>
         </div>
     </div>
@@ -188,11 +188,11 @@ class Reporter:
         <thead>
             <tr>
                 <th>#</th>
-                <th>Status</th>
-                <th>URL</th>
-                <th>HTTP</th>
-                <th>Diff %</th>
-                <th>Pixel</th>
+                <th>{t("report.col.status")}</th>
+                <th>{t("report.col.url")}</th>
+                <th>{t("report.col.http")}</th>
+                <th>{t("report.col.diff")}</th>
+                <th>{t("report.col.pixel")}</th>
             </tr>
         </thead>
         <tbody>
@@ -244,7 +244,7 @@ def _build_image_row(result: ScreenshotResult) -> str:
         b64 = _image_to_base64(result.baseline_path)
         parts.append(
             f"<div class='image-box'>"
-            f"<h3>Baseline</h3>"
+            f"<h3>{t('report.baseline')}</h3>"
             f"<img src='data:image/png;base64,{b64}' alt='Baseline' "
             f'onclick="showFullscreen(this.src)">'
             f"</div>"
@@ -255,7 +255,7 @@ def _build_image_row(result: ScreenshotResult) -> str:
         b64 = _image_to_base64(result.screenshot_path)
         parts.append(
             f"<div class='image-box'>"
-            f"<h3>Aktuell</h3>"
+            f"<h3>{t('report.current')}</h3>"
             f"<img src='data:image/png;base64,{b64}' alt='Aktuell' "
             f'onclick="showFullscreen(this.src)">'
             f"</div>"
@@ -266,7 +266,7 @@ def _build_image_row(result: ScreenshotResult) -> str:
         b64 = _image_to_base64(result.diff_path)
         parts.append(
             f"<div class='image-box'>"
-            f"<h3>Diff ({result.diff_percentage:.2f}%)</h3>"
+            f"<h3>{t('report.diff_heading', pct=result.diff_percentage)}</h3>"
             f"<img src='data:image/png;base64,{b64}' alt='Diff' "
             f'onclick="showFullscreen(this.src)">'
             f"</div>"

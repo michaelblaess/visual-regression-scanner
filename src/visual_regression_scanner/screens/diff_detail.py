@@ -11,6 +11,7 @@ from textual.containers import Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Static
 
+from ..i18n import t
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 
 
@@ -54,8 +55,8 @@ class DiffDetailScreen(ModalScreen[None]):
     """
 
     BINDINGS = [
-        Binding("escape", "close", "Schließen"),
-        Binding("q", "close", "Schließen"),
+        Binding("escape", "close", t("binding.close")),
+        Binding("q", "close", t("binding.close")),
     ]
 
     def __init__(self, result: ScreenshotResult, **kwargs: Any) -> None:
@@ -65,9 +66,9 @@ class DiffDetailScreen(ModalScreen[None]):
     def compose(self) -> ComposeResult:
         """Erstellt das Modal-Layout."""
         with Vertical():
-            yield Static(f"Diff-Details: {self._result.url}", id="detail-title")
+            yield Static(t("diffscreen.title", url=self._result.url), id="detail-title")
             yield Static(self._build_content(), id="detail-content")
-            yield Static("ESC / q = Schließen", id="detail-footer")
+            yield Static(t("diffscreen.footer"), id="detail-footer")
 
     def _build_content(self) -> Text:
         """Erstellt den Detail-Text.
@@ -78,13 +79,13 @@ class DiffDetailScreen(ModalScreen[None]):
         result = self._result
         text = Text()
 
-        text.append(f"URL: {result.url}\n", style="bold")
-        text.append(f"HTTP Status: {result.http_status_code}\n")
-        text.append(f"Ladezeit: {result.load_time_ms}ms\n")
-        text.append(f"Retries: {result.retry_count}\n\n")
+        text.append(t("diffscreen.url", url=result.url), style="bold")
+        text.append(t("diffscreen.http", code=result.http_status_code))
+        text.append(t("diffscreen.load_time", ms=result.load_time_ms))
+        text.append(t("diffscreen.retries", count=result.retry_count))
 
         # Status
-        text.append("Status: ", style="bold")
+        text.append(t("diffscreen.status"), style="bold")
         status_style = {
             ComparisonStatus.MATCH: "bold green",
             ComparisonStatus.DIFF: "bold red",
@@ -95,27 +96,27 @@ class DiffDetailScreen(ModalScreen[None]):
         text.append(f"{result.status_icon}\n\n", style=status_style)
 
         if result.status == ComparisonStatus.NEW_BASELINE:
-            text.append("Neue Baseline - kein Vergleich moeglich.\n", style="blue")
+            text.append(t("diffscreen.new_baseline"), style="blue")
             if result.screenshot_path:
-                text.append(f"Screenshot: {result.screenshot_path}\n", style="dim")
+                text.append(t("diffscreen.screenshot", path=result.screenshot_path), style="dim")
             return text
 
         if result.status in (ComparisonStatus.ERROR, ComparisonStatus.TIMEOUT):
-            text.append(f"Fehler: {result.error_message}\n", style="red")
+            text.append(t("diffscreen.error", error=result.error_message), style="red")
             return text
 
         # Diff-Details
-        text.append(f"Diff: {result.diff_percentage:.4f}%\n", style="bold")
-        text.append(f"Geänderte Pixel: {result.diff_pixel_count:,}\n")
-        text.append(f"Gesamt Pixel: {result.total_pixel_count:,}\n")
-        text.append(f"Threshold: {result.threshold}%\n\n")
+        text.append(t("diffscreen.diff", pct=result.diff_percentage), style="bold")
+        text.append(t("diffscreen.changed_pixels", count=result.diff_pixel_count))
+        text.append(t("diffscreen.total_pixels", count=result.total_pixel_count))
+        text.append(t("diffscreen.threshold", value=result.threshold))
 
         if result.baseline_path:
-            text.append(f"Baseline: {result.baseline_path}\n", style="dim")
+            text.append(t("diffscreen.baseline", path=result.baseline_path), style="dim")
         if result.screenshot_path:
-            text.append(f"Screenshot: {result.screenshot_path}\n", style="dim")
+            text.append(t("diffscreen.screenshot", path=result.screenshot_path), style="dim")
         if result.diff_path:
-            text.append(f"Diff-Bild: {result.diff_path}\n", style="dim")
+            text.append(t("diffscreen.diff_image", path=result.diff_path), style="dim")
 
         return text
 

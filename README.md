@@ -135,7 +135,6 @@ one instead of typing the URL again.
 | `o` | Open images in browser (lightbox with zoom) |
 | `l` | Toggle log |
 | `e` | Show diffs only |
-| `+` / `-` | Adjust log height |
 | `/` | Focus filter |
 | `s` | Settings |
 | `u` | Enter sitemap URL |
@@ -143,15 +142,18 @@ one instead of typing the URL again.
 | `i` | About dialog |
 | `q` | Quit |
 
+Drag the handle above the log area to resize it. Copy, export and hide live in the log area's
+context menu (right-click).
+
 ### Dynamic Scan Button
 
-The text of the scan button (`s`) adapts automatically to the current state:
+The text of the scan button (`c`) adapts automatically to the current state:
 
 | State | Button Text |
 |---------|------------|
-| No reference available | `s Scan (Referenz erstellen)` |
-| Reference available, no captures | `s Scan (vs. Referenz)` |
-| Reference + captures available | `s Scan (Modus waehlen)` |
+| No reference available | `c Scan (create reference)` |
+| Reference available, no captures | `c Scan (vs. reference)` |
+| Reference + captures available | `c Scan (choose mode)` |
 
 ## Load on the target system - please read this
 
@@ -194,9 +196,16 @@ arising from its use is excluded to the extent permitted by applicable law. Liab
 and gross negligence, for injury to life, body or health, and under mandatory product liability
 law remains unaffected.
 
-On first start the program asks you to confirm this notice. The language follows your system
-environment - German only for a demonstrably German-speaking environment, everything else falls
-back to English.
+On first start the program asks you to confirm this notice.
+
+## Language
+
+The interface is fully available in **English** and **German** - menus, messages, settings, the
+log and the command line help. Switch it in the settings (`s`); the choice is stored and applies
+from the next start.
+
+On the very first start the system environment decides: German only for a demonstrably
+German-speaking environment, everything else falls back to English.
 
 ## Workflow
 

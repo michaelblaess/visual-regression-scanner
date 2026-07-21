@@ -10,6 +10,8 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
+from ..i18n import t
+
 if TYPE_CHECKING:
     from ..models.scan_result import ScreenshotResult
 
@@ -139,7 +141,7 @@ class BaselineManager:
             count += 1
 
             if on_log:
-                on_log(f"  Baseline aktualisiert: {result.url}")
+                on_log(t("baseline.updated", url=result.url))
 
         # Viewport in Metadata speichern
         if viewport:

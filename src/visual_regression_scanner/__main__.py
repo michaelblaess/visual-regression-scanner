@@ -21,30 +21,8 @@ from textual_widgets import reset_terminal_title, set_terminal_title
 
 from visual_regression_scanner import __version__
 from visual_regression_scanner.app import VisualRegressionScannerApp
-
-BANNER = f"""
-  Visual Regression Scanner v{__version__}
-  Erkennt visuelle Aenderungen auf Websites per Screenshot-Vergleich
-"""
-
-USAGE_EXAMPLES = """
-Beispiele:
-  visual-regression-scanner https://example.com/sitemap.xml
-  visual-regression-scanner https://example.com/sitemap.xml --threshold 0.5
-  visual-regression-scanner https://example.com/sitemap.xml --viewport 1280x720
-  visual-regression-scanner https://example.com/sitemap.xml --output-html report.html
-  visual-regression-scanner https://example.com/sitemap.xml --filter /produkte
-  visual-regression-scanner https://example.com/sitemap.xml --cookie auth=token123
-
-Tastenkuerzel in der TUI:
-  u = URL eingeben    c = Scan starten             s = Einstellungen
-  h = Verlauf         r = Reset                    R = Reports
-  o = Bilder im Browser                            l = Log ein/aus
-  e = Nur Diffs       / = Filter                   + / - = Log-Hoehe
-  i = Info            q = Beenden
-
-  Das Log kopieren, exportieren oder ausblenden: Rechtsklick im Log-Bereich.
-"""
+from visual_regression_scanner.i18n import load_locale, t
+from visual_regression_scanner.models.settings import Settings
 
 
 def _build_parser() -> argparse.ArgumentParser:
@@ -55,8 +33,8 @@ def _build_parser() -> argparse.ArgumentParser:
     """
     parser = argparse.ArgumentParser(
         prog="visual-regression-scanner",
-        description=BANNER,
-        epilog=USAGE_EXAMPLES,
+        description=f"\n  Visual Regression Scanner v{__version__}\n  {t('cli.description')}\n",
+        epilog=t("cli.examples"),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
 
@@ -65,39 +43,39 @@ def _build_parser() -> argparse.ArgumentParser:
         nargs="?",
         default="",
         metavar="SITEMAP_URL",
-        help="URL der Sitemap (XML)",
+        help=t("cli.help.sitemap_url"),
     )
     parser.add_argument(
         "--screenshots-dir",
         "-d",
         default="./screenshots",
         metavar="PATH",
-        help="Root-Verzeichnis für Screenshots (default: ./screenshots). Pro Site wird ein Unterverzeichnis angelegt.",
+        help=t("cli.help.screenshots_dir"),
     )
     parser.add_argument(
         "--threshold",
         type=float,
         default=None,
         metavar="FLOAT",
-        help="Diff-Schwelle in Prozent (default: 0.1)",
+        help=t("cli.help.threshold"),
     )
     parser.add_argument(
         "--full-page",
         action="store_true",
         default=True,
-        help="Full-Page-Screenshot (default: True)",
+        help=t("cli.help.full_page"),
     )
     parser.add_argument(
         "--no-full-page",
         action="store_true",
         default=False,
-        help="Nur sichtbaren Bereich screenshotten",
+        help=t("cli.help.no_full_page"),
     )
     parser.add_argument(
         "--viewport",
         default="",
         metavar="WIDTHxHEIGHT",
-        help="Viewport-Größe (default: 1920x1080)",
+        help=t("cli.help.viewport"),
     )
     parser.add_argument(
         "--concurrency",
@@ -105,24 +83,20 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="N",
-        help="Max parallele Browser-Tabs (Vorgabe aus den Einstellungen: 4)",
+        help=t("cli.help.concurrency"),
     )
     parser.add_argument(
         "--rate-limit",
         type=int,
         default=None,
         metavar="N",
-        help=(
-            "Max. Seiten pro Minute (default: 60). Mit 0 laeuft der Scan ungebremst - "
-            "jede Seite wird für den Screenshot voll gerendert und belastet ein "
-            "Produktivsystem entsprechend"
-        ),
+        help=t("cli.help.rate_limit"),
     )
     parser.add_argument(
         "--ignore-robots",
         action="store_true",
         default=False,
-        help="robots.txt ignorieren (nur für eigene Seiten sinnvoll)",
+        help=t("cli.help.ignore_robots"),
     )
     parser.add_argument(
         "--timeout",
@@ -130,45 +104,45 @@ def _build_parser() -> argparse.ArgumentParser:
         type=int,
         default=None,
         metavar="SEC",
-        help="Timeout pro Seite in Sekunden (default: 30)",
+        help=t("cli.help.timeout"),
     )
     parser.add_argument(
         "--output-json",
         default="",
         metavar="PATH",
-        help="JSON-Report automatisch speichern",
+        help=t("cli.help.output_json"),
     )
     parser.add_argument(
         "--output-html",
         default="",
         metavar="PATH",
-        help="HTML-Report automatisch speichern",
+        help=t("cli.help.output_html"),
     )
     parser.add_argument(
         "--no-headless",
         action="store_true",
         default=False,
-        help="Browser sichtbar starten (Debugging)",
+        help=t("cli.help.no_headless"),
     )
     parser.add_argument(
         "--filter",
         "-f",
         default="",
         metavar="TEXT",
-        help="Nur URLs scannen die TEXT enthalten",
+        help=t("cli.help.filter"),
     )
     parser.add_argument(
         "--user-agent",
         default="",
         metavar="UA",
-        help="Custom User-Agent String (default: Chrome 131)",
+        help=t("cli.help.user_agent"),
     )
     parser.add_argument(
         "--cookie",
         action="append",
         default=[],
         metavar="NAME=VALUE",
-        help="Cookie setzen (z.B. --cookie auth=token). Mehrfach verwendbar.",
+        help=t("cli.help.cookie"),
     )
 
     return parser
@@ -176,6 +150,10 @@ def _build_parser() -> argparse.ArgumentParser:
 
 def main() -> None:
     """Haupteinstiegspunkt fuer die CLI."""
+    # Die Sprache steht in den Einstellungen und muss vor dem Aufbau der
+    # Kommandozeilen-Hilfe geladen sein - deren Texte entstehen sofort.
+    load_locale(Settings.load().language)
+
     parser = _build_parser()
     args = parser.parse_args()
 
@@ -187,7 +165,7 @@ def main() -> None:
     cookies = []
     for cookie_str in args.cookie:
         if "=" not in cookie_str:
-            print(f"Ungültig: --cookie {cookie_str} (Format: NAME=VALUE)")
+            print(t("cli.cookie_invalid", value=cookie_str))
             sys.exit(1)
         name, value = cookie_str.split("=", 1)
         cookies.append({"name": name.strip(), "value": value.strip()})

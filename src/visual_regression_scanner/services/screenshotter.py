@@ -14,6 +14,7 @@ from urllib.parse import urlparse
 import httpx
 from playwright.async_api import Browser, Page, Playwright, async_playwright
 
+from ..i18n import t
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 from .rate_limit import RateLimiter
 
@@ -98,15 +99,20 @@ class Screenshotter:
                 on_log(msg)
 
         log(
-            f"Starte Screenshots von {total} URLs "
-            f"(Concurrency: {self.concurrency}, Timeout: {self.timeout}s, "
-            f"Viewport: {self.viewport_width}x{self.viewport_height})"
+            t(
+                "shot.start",
+                total=total,
+                concurrency=self.concurrency,
+                timeout=self.timeout,
+                width=self.viewport_width,
+                height=self.viewport_height,
+            )
         )
 
         try:
             self._playwright = await async_playwright().start()
             self._browser = await self._launch_browser()
-            log("Browser gestartet")
+            log(t("shot.browser_started"))
 
             async def capture_with_semaphore(result: ScreenshotResult, index: int) -> None:
                 nonlocal completed
@@ -123,7 +129,7 @@ class Screenshotter:
                     if on_result:
                         on_result(result)
 
-                    log(f"Screenshot ({index + 1}/{total}): {result.url}")
+                    log(t("shot.capture", index=index + 1, total=total, url=result.url))
                     await self._capture_single_page(result, output_dir, log)
                     completed += 1
 
@@ -133,16 +139,16 @@ class Screenshotter:
                         on_progress(completed, total)
 
                     status_text = result.status_icon
-                    log(f"  [{status_text}] {result.url} ({result.load_time_ms / 1000:.1f}s)")
+                    log(t("shot.done", status=status_text, url=result.url, seconds=result.load_time_ms / 1000))
 
             tasks = [capture_with_semaphore(result, idx) for idx, result in enumerate(results)]
             await asyncio.gather(*tasks, return_exceptions=True)
 
         except Exception as e:
-            log(f"[red]Kritischer Fehler: {e}[/red]")
+            log(t("shot.critical", error=e))
         finally:
             await self._cleanup()
-            log("Browser geschlossen")
+            log(t("shot.browser_closed"))
 
         return results
 
@@ -169,22 +175,31 @@ class Screenshotter:
 
                 if attempt < self.MAX_RETRIES - 1:
                     wait_time = self.BACKOFF_BASE_SECONDS * (2**attempt)
-                    log(f"  Retry {attempt + 1}/{self.MAX_RETRIES} für {result.url} in {wait_time}s ({error_msg})")
+                    log(
+                        t(
+                            "shot.retry",
+                            attempt=attempt + 1,
+                            max=self.MAX_RETRIES,
+                            url=result.url,
+                            wait=wait_time,
+                            error=error_msg,
+                        )
+                    )
 
                     # Netzwerk-Check vor Retry
                     if not await self._check_network():
-                        log("  Warte auf Netzwerk...")
+                        log(t("shot.wait_network"))
                         await self._wait_for_network(max_wait=wait_time * 2)
 
                     await asyncio.sleep(wait_time)
 
                     # Browser-Recovery falls noetig
                     if not self._browser or not self._browser.is_connected():
-                        log("  Browser-Recovery...")
+                        log(t("shot.browser_recovery"))
                         try:
                             self._browser = await self._launch_browser()
                         except Exception as browser_err:
-                            log(f"  Browser-Recovery fehlgeschlagen: {browser_err}")
+                            log(t("shot.browser_recovery_failed", error=browser_err))
                 else:
                     # Letzter Versuch fehlgeschlagen
                     if "timeout" in error_msg.lower():
@@ -192,7 +207,7 @@ class Screenshotter:
                     else:
                         result.status = ComparisonStatus.ERROR
                     result.error_message = error_msg
-                    log(f"  [bold red]Fehlgeschlagen nach {self.MAX_RETRIES} Versuchen: {error_msg}[/bold red]")
+                    log(t("shot.failed", max=self.MAX_RETRIES, error=error_msg))
 
     async def _do_capture_page(
         self,
@@ -310,7 +325,7 @@ class Screenshotter:
                 return null;
             }""")
             if consent_result:
-                log(f"    Consent akzeptiert ({consent_result})")
+                log(t("shot.consent_accepted", result=consent_result))
                 await page.wait_for_timeout(2000)
                 # Banner verstecken als Sicherheit
                 await self._hide_consent_banners(page)
@@ -350,7 +365,7 @@ class Screenshotter:
                 button = page.locator(selector).first
                 if await button.is_visible(timeout=500):
                     await button.click(timeout=2000)
-                    log(f"    Consent-Button geklickt: {selector}")
+                    log(t("shot.consent_clicked", selector=selector))
                     clicked = True
                     break
             except Exception:
@@ -470,13 +485,13 @@ class Screenshotter:
             }""")
 
             if loaded and loaded.get("total", 0) > 0:
-                log(f"    Bilder geladen: {loaded['loaded']}/{loaded['total']}")
+                log(t("shot.images_loaded", loaded=loaded["loaded"], total=loaded["total"]))
 
             # Zusaetzliche Wartezeit damit spaet geladene Bilder fertig rendern
             await page.wait_for_timeout(1000)
 
         except Exception as e:
-            log(f"    Lazy-Loading-Check fehlgeschlagen: {e}")
+            log(t("shot.lazy_check_failed", error=e))
 
     async def _launch_browser(self) -> Browser:
         """Startet den Chromium-Browser.
