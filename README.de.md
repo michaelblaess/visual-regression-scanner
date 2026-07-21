@@ -87,6 +87,8 @@ run.bat https://example.com/sitemap.xml --cookie auth=token123
 | `--viewport WxH` | `1920x1080` | Viewport-Größe |
 | `--concurrency N` | `4` | Max parallele Browser-Tabs |
 | `--timeout SEC` | `30` | Timeout pro Seite in Sekunden |
+| `--rate-limit N` | `60` | Max. Seiten pro Minute (0 = ohne Limit) |
+| `--ignore-robots` | `false` | robots.txt ignorieren |
 | `--output-json PATH` | - | JSON-Report automatisch speichern |
 | `--output-html PATH` | - | HTML-Report automatisch speichern |
 | `--no-headless` | `false` | Browser sichtbar starten |
@@ -120,6 +122,51 @@ Der Text des Scan-Buttons (`s`) passt sich automatisch an den aktuellen Zustand 
 | Keine Referenz vorhanden | `s Scan (Referenz erstellen)` |
 | Referenz vorhanden, keine Aufnahmen | `s Scan (vs. Referenz)` |
 | Referenz + Aufnahmen vorhanden | `s Scan (Modus waehlen)` |
+
+## Last auf dem Zielsystem - bitte lesen
+
+Für den Screenshot wird jede Seite **vollständig in einem echten Browser gerendert**: Skripte,
+Schriften und Bilder werden geladen, der Aufruf läuft an den Zwischenspeichern des Servers vorbei.
+Bei Ganzseiten-Aufnahmen wird zusätzlich durch die komplette Seite gescrollt, damit nachgeladene
+Inhalte erscheinen. Eine Seite wiegt damit ein Vielfaches eines einfachen HTTP-Abrufs - und ein
+Lauf fasst *jede* Seite der Sitemap an.
+
+Der Scanner ist deshalb **von Haus aus gedrosselt**: 60 Seiten pro Minute.
+
+```bash
+visual-regression-scanner https://www.example.com/sitemap.xml --rate-limit 20   # schonender
+visual-regression-scanner https://www.example.com/sitemap.xml --rate-limit 0    # ohne Limit - Vorsicht
+```
+
+`--concurrency` ist **kein** Rate-Limit: Die Einstellung begrenzt, wie viele Browser-Tabs
+gleichzeitig laufen, nicht wie viele Seiten pro Minute abgerufen werden.
+
+`robots.txt` wird für die Seiten aus der Sitemap standardmäßig beachtet; gesperrte Seiten werden
+übersprungen und im Log ausgewiesen. `--ignore-robots` nur für eigene Systeme verwenden.
+
+## Nutzung auf eigene Verantwortung
+
+Dieses Programm ruft Webseiten automatisiert ab und erzeugt dabei Last auf den Zielsystemen. Je
+nach Einstellung kann diese Last die eines normalen Besuchers um ein Vielfaches übersteigen und
+die Erreichbarkeit des Zielsystems beeinträchtigen.
+
+Mit der Nutzung erklären Sie:
+
+1. Sie setzen das Programm ausschließlich gegen Systeme ein, für die Ihnen eine ausdrückliche
+   Berechtigung des Betreibers vorliegt.
+2. Sie tragen die alleinige Verantwortung für den Einsatz, die gewählten Einstellungen und alle
+   daraus entstehenden Folgen.
+3. Vor einem Lauf gegen ein Produktivsystem prüfen Sie, ob die eingestellten Grenzwerte für
+   dieses System angemessen sind.
+
+Die Software wird unentgeltlich und ohne jede Gewährleistung bereitgestellt ("as is"), wie in
+Abschnitt 7 der Apache-Lizenz 2.0 beschrieben. Eine Haftung des Autors (Michael Blaess) für
+Schäden, die aus der Nutzung entstehen, ist ausgeschlossen, soweit dies gesetzlich zulässig ist.
+Unberührt bleibt die Haftung für Vorsatz und grobe Fahrlässigkeit, für Schäden aus der Verletzung
+des Lebens, des Körpers oder der Gesundheit sowie nach dem Produkthaftungsgesetz.
+
+Beim ersten Start fragt das Programm diesen Hinweis ab. Die Sprache richtet sich nach Deiner
+Systemumgebung - Deutsch nur bei nachweislich deutschsprachiger Umgebung, sonst Englisch.
 
 ## Workflow
 

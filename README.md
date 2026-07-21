@@ -87,6 +87,8 @@ run.bat https://example.com/sitemap.xml --cookie auth=token123
 | `--viewport WxH` | `1920x1080` | Viewport size |
 | `--concurrency N` | `4` | Max parallel browser tabs |
 | `--timeout SEC` | `30` | Timeout per page in seconds |
+| `--rate-limit N` | `60` | Max pages per minute (0 = no limit) |
+| `--ignore-robots` | `false` | Ignore robots.txt |
 | `--output-json PATH` | - | Save JSON report automatically |
 | `--output-html PATH` | - | Save HTML report automatically |
 | `--no-headless` | `false` | Start browser visibly |
@@ -120,6 +122,51 @@ The text of the scan button (`s`) adapts automatically to the current state:
 | No reference available | `s Scan (Referenz erstellen)` |
 | Reference available, no captures | `s Scan (vs. Referenz)` |
 | Reference + captures available | `s Scan (Modus waehlen)` |
+
+## Load on the target system - please read this
+
+Every page is **fully rendered in a real browser** to take the screenshot: scripts, fonts and
+images are loaded, and the request bypasses the server's caches. With full-page captures the tool
+additionally scrolls through the entire page so lazy-loaded content appears. One page therefore
+weighs several times an ordinary HTTP request - and a run touches *every* page of the sitemap.
+
+The scanner is therefore **rate-limited out of the box**: 60 pages per minute.
+
+```bash
+visual-regression-scanner https://www.example.com/sitemap.xml --rate-limit 20   # gentler
+visual-regression-scanner https://www.example.com/sitemap.xml --rate-limit 0    # no limit - careful
+```
+
+Note that `--concurrency` is **not** a rate limit: it caps how many browser tabs run at the same
+time, not how many pages go out per minute.
+
+`robots.txt` is honoured by default for the pages from the sitemap; blocked pages are skipped and
+reported in the log. Use `--ignore-robots` only for systems of your own.
+
+## Use at your own risk
+
+This program retrieves web pages automatically and thereby places load on the target systems.
+Depending on its settings, that load can exceed the load of an ordinary visitor many times over
+and can impair the availability of the target system.
+
+By using it, you declare that:
+
+1. You will use this program only against systems for which you hold explicit authorisation from
+   their operator.
+2. You bear sole responsibility for its use, for the settings you choose and for all
+   consequences arising from them.
+3. Before running it against a production system, you will verify that the configured limits are
+   appropriate for that system.
+
+The software is provided free of charge and without warranty of any kind ("as is"), as set out in
+section 7 of the Apache License 2.0. The liability of the author (Michael Blaess) for damages
+arising from its use is excluded to the extent permitted by applicable law. Liability for intent
+and gross negligence, for injury to life, body or health, and under mandatory product liability
+law remains unaffected.
+
+On first start the program asks you to confirm this notice. The language follows your system
+environment - German only for a demonstrably German-speaking environment, everything else falls
+back to English.
 
 ## Workflow
 
