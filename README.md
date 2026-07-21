@@ -5,6 +5,10 @@
   <img src="docs/flags/de.svg" height="13" alt=""> <a href="README.de.md">Deutsch</a>
 </p>
 
+<p align="center">
+  <a href="https://michaelblaess.github.io/visual-regression-scanner/">Project page</a>
+</p>
+
 ---
 
 [![Stars](https://img.shields.io/github/stars/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=fbbf24)](https://github.com/michaelblaess/visual-regression-scanner/stargazers)
@@ -97,11 +101,32 @@ run.bat https://example.com/sitemap.xml --cookie auth=token123
 | `--user-agent UA` | Chrome 131 | Custom user agent |
 | `--cookie NAME=VALUE` | - | Set cookie (can be used multiple times) |
 
+### Settings
+
+Press `s` in the TUI to open the settings. They are stored in
+`~/.visual-regression-scanner/settings.json` and cover diff threshold, viewport, full-page
+capture, parallel tabs, rate limit, timeout, robots.txt, visible browser, user agent, cookies and
+proxy - plus interface language and theme.
+
+Command-line flags take precedence for the current run without changing the stored values. Only
+flags you actually pass override anything; everything else comes from the settings.
+
+### Image preview and history
+
+The detail pane shows the selected capture directly in the terminal - switch between
+**reference**, **current** and **difference**. By default the image is drawn from Unicode half
+blocks, which renders safely in any terminal; enable *graphical preview* in the settings for
+pixel-accurate output via Sixel or the Kitty protocol. The browser comparison view is still one
+button away.
+
+`h` opens the history of previously checked sitemaps with viewport and result, so you can pick
+one instead of typing the URL again.
+
 ## Keyboard Shortcuts
 
 | Key | Action |
 |-------|--------|
-| `s` | Start scan (dynamic text, see below) |
+| `c` | Start scan (dynamic text, see below) |
 | `r` | Reset (delete all images + reload sitemap) |
 | `R` | Save reports (HTML + JSON) |
 | `o` | Open images in browser (lightbox with zoom) |
@@ -109,7 +134,9 @@ run.bat https://example.com/sitemap.xml --cookie auth=token123
 | `e` | Show diffs only |
 | `+` / `-` | Adjust log height |
 | `/` | Focus filter |
-| `c` | Copy log to clipboard |
+| `s` | Settings |
+| `u` | Enter sitemap URL |
+| `h` | History of checked sitemaps |
 | `i` | About dialog |
 | `q` | Quit |
 

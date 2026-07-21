@@ -5,6 +5,10 @@
   <img src="docs/flags/de.svg" height="13" alt=""> <b>Deutsch</b>
 </p>
 
+<p align="center">
+  <a href="https://michaelblaess.github.io/visual-regression-scanner/">Projektseite</a>
+</p>
+
 ---
 
 [![Stars](https://img.shields.io/github/stars/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=fbbf24)](https://github.com/michaelblaess/visual-regression-scanner/stargazers)
@@ -97,11 +101,33 @@ run.bat https://example.com/sitemap.xml --cookie auth=token123
 | `--user-agent UA` | Chrome 131 | Custom User-Agent |
 | `--cookie NAME=VALUE` | - | Cookie setzen (mehrfach möglich) |
 
+### Einstellungen
+
+Mit `s` öffnest Du in der TUI die Einstellungen. Sie liegen in
+`~/.visual-regression-scanner/settings.json` und umfassen Diff-Schwelle, Viewport,
+Ganzseiten-Aufnahme, parallele Tabs, Rate-Limit, Timeout, robots.txt, sichtbaren Browser,
+User-Agent, Cookies und Proxy - dazu Sprache und Theme der Oberfläche.
+
+Angaben auf der Kommandozeile haben für den laufenden Aufruf Vorrang, ohne die gespeicherten
+Werte zu verändern. Überschrieben wird nur, was Du tatsächlich angibst; alles andere kommt aus
+den Einstellungen.
+
+### Bildvorschau und Verlauf
+
+Die Detailansicht zeigt die gewählte Aufnahme direkt im Terminal - umschaltbar zwischen
+**Referenz**, **Aktuell** und **Unterschied**. Standardmäßig wird das Bild aus
+Unicode-Halbblöcken aufgebaut, was auf jedem Terminal sicher darstellbar ist; für pixelgenaue
+Ausgabe über Sixel oder das Kitty-Protokoll schaltest Du in den Einstellungen die *grafische
+Vorschau* ein. Der Browser-Vergleich bleibt weiterhin einen Knopfdruck entfernt.
+
+Mit `h` öffnest Du den Verlauf der zuletzt geprüften Sitemaps samt Viewport und Ergebnis - so
+wählst Du ein Ziel aus, statt die URL erneut einzutippen.
+
 ## Tastenkürzel
 
 | Taste | Aktion |
 |-------|--------|
-| `s` | Scan starten (dynamischer Text, siehe unten) |
+| `c` | Scan starten (dynamischer Text, siehe unten) |
 | `r` | Reset (alle Bilder löschen + Sitemap neu laden) |
 | `R` | Reports speichern (HTML + JSON) |
 | `o` | Bilder im Browser öffnen (Lightbox mit Zoom) |
@@ -109,7 +135,9 @@ run.bat https://example.com/sitemap.xml --cookie auth=token123
 | `e` | Nur Diffs anzeigen |
 | `+` / `-` | Log-Höhe anpassen |
 | `/` | Filter fokussieren |
-| `c` | Log in Zwischenablage kopieren |
+| `s` | Einstellungen |
+| `u` | Sitemap-URL eingeben |
+| `h` | Verlauf der geprüften Sitemaps |
 | `i` | About-Dialog |
 | `q` | Beenden |
 
