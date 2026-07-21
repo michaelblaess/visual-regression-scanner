@@ -53,32 +53,35 @@ irm https://raw.githubusercontent.com/michaelblaess/visual-regression-scanner/ma
 ## Setup
 
 ```bash
-# Einmalig: Setup ausfuehren
-setup.bat
+# Windows
+.\bootstrap.ps1
+
+# Linux/macOS
+./bootstrap.sh
 ```
 
-Das Setup erstellt eine virtuelle Umgebung, installiert alle Abhängigkeiten und lädt Chromium herunter.
+Das Bootstrap-Skript erstellt eine virtuelle Umgebung, installiert alle Abhängigkeiten und lädt Chromium herunter.
 
 ## Verwendung
 
 ```bash
 # TUI starten
-run.bat https://example.com/sitemap.xml
+visual-regression-scanner https://example.com/sitemap.xml
 
 # Mit erhoehter Toleranz
-run.bat https://example.com/sitemap.xml --threshold 0.5
+visual-regression-scanner https://example.com/sitemap.xml --threshold 0.5
 
 # Kleinerer Viewport
-run.bat https://example.com/sitemap.xml --viewport 1280x720
+visual-regression-scanner https://example.com/sitemap.xml --viewport 1280x720
 
 # HTML-Report automatisch speichern
-run.bat https://example.com/sitemap.xml --output-html report.html
+visual-regression-scanner https://example.com/sitemap.xml --output-html report.html
 
 # Nur bestimmte URLs
-run.bat https://example.com/sitemap.xml --filter /produkte
+visual-regression-scanner https://example.com/sitemap.xml --filter /produkte
 
 # Mit Auth-Cookie
-run.bat https://example.com/sitemap.xml --cookie auth=token123
+visual-regression-scanner https://example.com/sitemap.xml --cookie auth=token123
 ```
 
 ## CLI-Parameter
@@ -200,7 +203,7 @@ Systemumgebung - Deutsch nur bei nachweislich deutschsprachiger Umgebung, sonst 
 
 ### Erster Scan (Referenz wird automatisch erstellt)
 
-1. `run.bat https://example.com/sitemap.xml`
+1. `visual-regression-scanner https://example.com/sitemap.xml`
 2. Taste `s` - Footer zeigt "Scan (Referenz erstellen)"
 3. Screenshots werden erstellt und **automatisch** als Referenz gespeichert, Status "NEU"
 4. Danach zeigt der Footer "Scan (vs. Referenz)"
