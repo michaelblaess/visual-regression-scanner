@@ -9,6 +9,7 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, DataTable, Static
 
+from ..i18n import t
 from ..models.history import History, HistoryEntry
 
 
@@ -19,8 +20,8 @@ class HistoryScreen(ModalScreen[HistoryEntry | None]):
     """
 
     BINDINGS = [
-        Binding("escape", "cancel", "Schließen"),
-        Binding("enter", "select", "Auswählen"),
+        Binding("escape", "cancel", t("binding.close")),
+        Binding("enter", "select", t("binding.select")),
     ]
 
     DEFAULT_CSS = """
@@ -60,25 +61,27 @@ class HistoryScreen(ModalScreen[HistoryEntry | None]):
 
     def compose(self) -> ComposeResult:
         with Vertical():
-            yield Static("Verlauf - geprüfte Sitemaps", id="history-title")
+            yield Static(t("history.title"), id="history-title")
             if self._entries:
                 yield DataTable(id="history-table", cursor_type="row", zebra_stripes=True)
             else:
-                yield Static(
-                    "Noch keine Einträge. Nach dem ersten Lauf erscheint die Sitemap hier.",
-                    id="history-empty",
-                )
+                yield Static(t("history.empty"), id="history-empty")
             with Horizontal(id="history-buttons"):
-                yield Button("Schließen", variant="default", id="history-close")
+                yield Button(t("history.btn.close"), variant="default", id="history-close")
                 if self._entries:
-                    yield Button("Auswählen", variant="primary", id="history-select")
+                    yield Button(t("history.btn.select"), variant="primary", id="history-select")
 
     def on_mount(self) -> None:
         """Fuellt die Tabelle mit den gespeicherten Eintraegen."""
         if not self._entries:
             return
         table = self.query_one("#history-table", DataTable)
-        table.add_columns("Sitemap", "Wann", "Viewport", "Ergebnis")
+        table.add_columns(
+            t("history.col.sitemap"),
+            t("history.col.when"),
+            t("history.col.viewport"),
+            t("history.col.result"),
+        )
         for entry in self._entries:
             table.add_row(
                 entry.url,

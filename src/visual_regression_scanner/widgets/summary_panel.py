@@ -8,6 +8,7 @@ from rich.text import Text
 from textual.app import RenderResult
 from textual.widget import Widget
 
+from ..i18n import t
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 
 
@@ -40,34 +41,40 @@ class SummaryPanel(Widget):
         text = Text()
 
         if not self._sitemap_url:
-            return Text("Keine Sitemap geladen.", style="dim italic")
+            return Text(t("summary.empty"), style="dim italic")
 
         # Zeile 1: Sitemap + Fortschritt
-        text.append(" Sitemap: ", style="bold")
+        text.append(t("summary.sitemap"), style="bold")
         text.append(self._sitemap_url, style="dim")
         text.append("  |  ", style="dim")
-        text.append(f"{self._total_urls} URLs", style="bold")
+        text.append(t("summary.urls", count=self._total_urls), style="bold")
 
         if self._scanned > 0:
-            text.append(f"  ({self._scanned}/{self._total_urls} gescannt)", style="dim")
+            text.append(t("summary.scanned", done=self._scanned, total=self._total_urls), style="dim")
 
         # Zeile 2: Vergleichs-Zaehler
         text.append("\n")
 
         if self._scanned > 0:
             if self._diffs > 0:
-                text.append(f" {self._diffs} Diffs", style="bold red")
+                text.append(t("summary.diffs", count=self._diffs), style="bold red")
             else:
-                text.append(" Keine Diffs", style="bold green")
+                text.append(t("summary.no_diffs"), style="bold green")
 
             text.append("  |  ")
-            text.append(f"OK: {self._matches}", style="bold green" if self._matches > 0 else "dim")
+            text.append(t("summary.ok", count=self._matches), style="bold green" if self._matches > 0 else "dim")
             text.append("  |  ")
-            text.append(f"Neu: {self._new_baselines}", style="bold blue" if self._new_baselines > 0 else "dim")
+            text.append(
+                t("summary.new", count=self._new_baselines),
+                style="bold blue" if self._new_baselines > 0 else "dim",
+            )
             text.append("  |  ")
-            text.append(f"Fehler: {self._errors}", style="bold red" if self._errors > 0 else "dim")
+            text.append(t("summary.errors", count=self._errors), style="bold red" if self._errors > 0 else "dim")
             text.append("  |  ")
-            text.append(f"Timeout: {self._timeouts}", style="bold yellow" if self._timeouts > 0 else "dim")
+            text.append(
+                t("summary.timeouts", count=self._timeouts),
+                style="bold yellow" if self._timeouts > 0 else "dim",
+            )
 
         return text
 

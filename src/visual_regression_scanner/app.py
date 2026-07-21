@@ -32,7 +32,7 @@ from textual_widgets import (
 )
 
 from . import __author__, __version__, __year__
-from .i18n import detect_language
+from .i18n import current_language, load_locale, t
 from .models.history import History, HistoryEntry
 from .models.robots import RobotsChecker
 from .models.scan_result import ComparisonStatus, ComparisonSummary, ScreenshotResult
@@ -53,20 +53,23 @@ class VisualRegressionScannerApp(App[None]):
     CSS_PATH = "app.tcss"
     TITLE = f"Visual Regression Scanner v{__version__} ({__year__})"
 
+    # Die Beschriftungen stehen hier als Sprachschluessel: BINDINGS wird beim
+    # Import ausgewertet, also bevor eine Sprachdatei geladen ist.
+    # _localize_bindings() setzt die fertigen Texte im Konstruktor nach.
     BINDINGS = [
-        Binding("u", "enter_url", "URL eingeben"),
-        Binding("s", "show_settings", "Settings"),
-        Binding("h", "show_history", "History"),
-        Binding("q", "quit", "Beenden"),
-        Binding("c", "start_scan", "Scan"),
-        Binding("r", "reset_site", "Reset"),
-        Binding("R", "save_reports", "Report", key_display="R"),
-        Binding("l", "toggle_log", "Log"),
-        Binding("e", "toggle_diffs", "Nur Diffs"),
-        Binding("slash", "focus_filter", "Filter", key_display="/", show=False),
-        Binding("escape", "unfocus_filter", "Filter leeren", show=False),
-        Binding("o", "open_images", "Bilder"),
-        Binding("i", "show_about", "Info"),
+        Binding("u", "enter_url", "binding.enter_url"),
+        Binding("s", "show_settings", "binding.settings"),
+        Binding("h", "show_history", "binding.history"),
+        Binding("q", "quit", "binding.quit"),
+        Binding("c", "start_scan", "binding.scan"),
+        Binding("r", "reset_site", "binding.reset"),
+        Binding("R", "save_reports", "binding.report", key_display="R"),
+        Binding("l", "toggle_log", "binding.log"),
+        Binding("e", "toggle_diffs", "binding.only_diffs"),
+        Binding("slash", "focus_filter", "binding.filter", key_display="/", show=False),
+        Binding("escape", "unfocus_filter", "binding.clear_filter", show=False),
+        Binding("o", "open_images", "binding.images"),
+        Binding("i", "show_about", "binding.about"),
     ]
 
     def __init__(
@@ -96,6 +99,8 @@ class VisualRegressionScannerApp(App[None]):
         # Gespeicherte Einstellungen als Grundlage; Angaben auf der
         # Kommandozeile haben Vorrang, ohne die Datei zu veraendern.
         self._settings = Settings.load()
+        load_locale(self._settings.language)
+        self._localize_bindings()
         self._disclaimer = DisclaimerStore(SETTINGS_FILE.parent / "disclaimer.json")
         self.theme = self._settings.theme
 
@@ -148,6 +153,10 @@ class VisualRegressionScannerApp(App[None]):
         self._restore_timer: Timer | None = None
         self._spinner_idx: int = 0
 
+    def _localize_bindings(self) -> None:
+        """Uebersetzt die Beschriftungen der eigenen Tastenkuerzel."""
+        _localize_bindings(self)
+
     def compose(self) -> ComposeResult:
         """Erstellt das UI-Layout."""
         yield Header()
@@ -159,7 +168,7 @@ class VisualRegressionScannerApp(App[None]):
                 yield HorizontalSplitter(target_id="results-table", min_size=5, id="log-splitter")
                 yield LogPanel(
                     id="scan-log",
-                    lang=detect_language(),
+                    lang=current_language(),
                     export_name="visual-regression-scanner",
                 )
 
@@ -178,7 +187,7 @@ class VisualRegressionScannerApp(App[None]):
         if entry is None or not entry.url:
             return
         self.sitemap_url = entry.url
-        self._write_log(f"Aus dem Verlauf: {entry.url}")
+        self._write_log(t("log.from_history", url=entry.url))
         self._load_sitemap()
 
     def action_show_settings(self) -> None:
@@ -186,7 +195,7 @@ class VisualRegressionScannerApp(App[None]):
         from .screens.settings import ScannerSettingsScreen
 
         self.push_screen(
-            ScannerSettingsScreen(self._settings.to_dict(), lang=detect_language()),
+            ScannerSettingsScreen(self._settings.to_dict(), lang=current_language()),
             callback=self._on_settings_closed,
         )
 
@@ -233,7 +242,7 @@ class VisualRegressionScannerApp(App[None]):
         self.push_screen(
             DisclaimerScreen(
                 app_name=f"visual-regression-scanner {__version__}",
-                lang=detect_language(),
+                lang=current_language(),
                 author=__author__,
                 footer=(f"© {__year__} {__author__} · github.com/michaelblaess/visual-regression-scanner"),
             ),
@@ -249,24 +258,25 @@ class VisualRegressionScannerApp(App[None]):
 
     def on_mount(self) -> None:
         """Initialisierung nach dem Starten."""
-        self._write_log(f"[bold]Visual Regression Scanner v{__version__}[/bold]")
+        self._write_log(t("log.version", version=__version__))
         self._write_log(
-            f"Concurrency: {self.concurrency} | Timeout: {self.timeout}s | "
-            f"Threshold: {self.threshold}% | Viewport: {self.viewport}"
+            t(
+                "log.config",
+                concurrency=self.concurrency,
+                timeout=self.timeout,
+                threshold=self.threshold,
+                viewport=self.viewport,
+            )
         )
         # Last-Hinweis frueh ins Protokoll: ohne Limit haengt die Rate allein
         # davon ab, wie schnell das Ziel antwortet.
         if self.rate_per_minute > 0:
-            self._write_log(f"Rate-Limit aktiv: max. {self.rate_per_minute} Seiten/Minute")
+            self._write_log(t("log.rate_active", rate=self.rate_per_minute))
         else:
-            self._write_log(
-                f"[yellow]Kein Rate-Limit - bis zu {self.concurrency} Seiten gleichzeitig, "
-                f"so schnell wie das Ziel antwortet. Für Produktivsysteme --rate-limit "
-                f"verwenden.[/yellow]"
-            )
+            self._write_log(t("log.rate_off", concurrency=self.concurrency))
 
         self._ask_disclaimer()
-        self._write_log(f"Screenshots: {self.screenshots_dir}")
+        self._write_log(t("log.screenshots_dir", path=self.screenshots_dir))
 
         # Focus auf die Tabelle setzen damit Footer-Bindings sofort sichtbar
         try:
@@ -283,7 +293,7 @@ class VisualRegressionScannerApp(App[None]):
     def action_enter_url(self) -> None:
         """Fragt eine Sitemap-URL ab und laedt sie - fuer den Start ohne Argument."""
         self.push_screen(
-            UrlInputScreen(initial=self.sitemap_url, lang=detect_language()),
+            UrlInputScreen(initial=self.sitemap_url, lang=current_language()),
             callback=self._on_url_entered,
         )
 
@@ -292,7 +302,7 @@ class VisualRegressionScannerApp(App[None]):
         if not url:
             return
         self.sitemap_url = url
-        self._write_log(f"Sitemap: {url}")
+        self._write_log(t("log.sitemap", url=url))
         self._load_sitemap()
 
     def _get_scan_label(self) -> str:
@@ -322,11 +332,10 @@ class VisualRegressionScannerApp(App[None]):
         )
 
         if has_baseline and has_current:
-            return "Scan (Modus wählen)"
-        elif has_baseline:
-            return "Scan (vs. Referenz)"
-        else:
-            return "Scan (Referenz erstellen)"
+            return t("scan.label.choose")
+        if has_baseline:
+            return t("scan.label.vs_baseline")
+        return t("scan.label.create_baseline")
 
     def _update_scan_label(self) -> None:
         """Aktualisiert den Scan-Button-Text im Footer.
@@ -358,26 +367,26 @@ class VisualRegressionScannerApp(App[None]):
         Kann sowohl vom initialen _load_sitemap als auch vom Reset
         aufgerufen werden.
         """
-        self._write_log(f"Lade Sitemap: {self.sitemap_url}")
+        self._write_log(t("log.loading_sitemap", url=self.sitemap_url))
 
         try:
             parser = SitemapParser(self.sitemap_url, url_filter=self.url_filter, cookies=self.cookies)
             self._urls = await parser.parse()
         except SitemapError as e:
-            self._write_log(f"[red]Sitemap-Fehler: {e}[/red]")
-            self.app.push_screen(_SitemapErrorScreen(f"Sitemap-Fehler:\n\n{e}"))
+            self._write_log(t("log.sitemap_error", error=e))
+            self.app.push_screen(_SitemapErrorScreen(t("error.sitemap", error=e)))
             return
         except Exception as e:
-            self._write_log(f"[red]Unerwarteter Fehler: {e}[/red]")
-            self.app.push_screen(_SitemapErrorScreen(f"Unerwarteter Fehler:\n\n{e}"))
+            self._write_log(t("log.unexpected_error", error=e))
+            self.app.push_screen(_SitemapErrorScreen(t("error.unexpected", error=e)))
             return
 
         if not self._urls:
-            self._write_log("[yellow]Keine URLs in der Sitemap gefunden.[/yellow]")
-            self.notify("Keine URLs gefunden!", severity="warning")
+            self._write_log(t("log.no_urls"))
+            self.notify(t("notify.no_urls_found"), severity="warning")
             return
 
-        self._write_log(f"[green]{len(self._urls)} URLs geladen[/green]")
+        self._write_log(t("log.urls_loaded", count=len(self._urls)))
 
         History.add(
             HistoryEntry(
@@ -397,19 +406,16 @@ class VisualRegressionScannerApp(App[None]):
             allowed = [url for url in self._urls if robots.is_allowed(url)]
             blocked = len(self._urls) - len(allowed)
             if blocked:
-                self._write_log(
-                    f"[yellow]robots.txt: {blocked} von {len(self._urls)} Seiten gesperrt "
-                    f"- werden übersprungen[/yellow]"
-                )
+                self._write_log(t("log.robots_blocked", blocked=blocked, total=len(self._urls)))
                 self._urls = allowed
             else:
-                self._write_log("robots.txt beachtet - keine Seite gesperrt")
+                self._write_log(t("log.robots_ok"))
             if not self._urls:
-                self._write_log("[yellow]Alle Seiten sind per robots.txt gesperrt.[/yellow]")
-                self.notify("Alle URLs durch robots.txt gesperrt!", severity="warning")
+                self._write_log(t("log.robots_all_blocked"))
+                self.notify(t("notify.robots_all_blocked"), severity="warning")
                 return
         else:
-            self._write_log("robots.txt wird ignoriert (--ignore-robots)")
+            self._write_log(t("log.robots_ignored"))
 
         # Hostname aus erster URL extrahieren fuer Site-Verzeichnis
         self._site_hostname = _extract_hostname(self._urls[0])
@@ -418,13 +424,13 @@ class VisualRegressionScannerApp(App[None]):
         self._current_dir = os.path.join(self._site_dir, "current")
         self._diffs_dir = os.path.join(self._site_dir, "diffs")
 
-        self._write_log(f"Site-Verzeichnis: {self._site_dir}")
+        self._write_log(t("log.site_dir", path=self._site_dir))
 
         # Ergebnisse initialisieren
         self._results = [ScreenshotResult(url=url, threshold=self.threshold) for url in self._urls]
 
         # Vorherige Ergebnisse wiederherstellen (in Thread, blockiert nicht die TUI)
-        self._write_log("Prüfe vorherige Ergebnisse...")
+        self._write_log(t("log.checking_previous"))
         self._restore_count = 0
         self._restore_total = len(self._urls)
         self._restore_restored = 0
@@ -438,7 +444,7 @@ class VisualRegressionScannerApp(App[None]):
             self._restore_timer = None
 
         if restored > 0:
-            self._write_log(f"[green]{restored} Ergebnisse aus vorherigem Scan wiederhergestellt[/green]")
+            self._write_log(t("log.restored", count=restored))
             # Cache speichern/aktualisieren (falls neu berechnet wurde)
             self._save_results_cache()
 
@@ -451,7 +457,7 @@ class VisualRegressionScannerApp(App[None]):
         table = self.query_one("#results-table", ResultsTable)
         table.load_results(self._results)
 
-        self.sub_title = f"{len(self._urls)} URLs"
+        self.sub_title = t("subtitle.urls", count=len(self._urls))
         self._update_scan_label()
 
     # Name der Cache-Datei fuer gespeicherte Vergleichs-Ergebnisse
@@ -530,9 +536,9 @@ class VisualRegressionScannerApp(App[None]):
         frames = "⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏"
         self._spinner_idx = (self._spinner_idx + 1) % len(frames)
         spinner = frames[self._spinner_idx]
-        text = f"{spinner} Prüfe Ergebnisse... {self._restore_count}/{self._restore_total}"
+        text = t("subtitle.restore", spinner=spinner, done=self._restore_count, total=self._restore_total)
         if self._restore_restored > 0:
-            text += f" ({self._restore_restored} wiederhergestellt)"
+            text += t("subtitle.restore_restored", count=self._restore_restored)
         self.sub_title = text
 
     def _restore_previous_results(self) -> int:
@@ -608,14 +614,16 @@ class VisualRegressionScannerApp(App[None]):
                     cache_hits += 1
                     self._restore_restored = restored
 
-                    if result.status == ComparisonStatus.DIFF:
-                        log(
-                            f"  ({idx + 1}/{len(self._results)}) [red]DIFF {result.diff_percentage:.2f}%[/red] {result.url}"
+                    key = "log.restore_diff" if result.status == ComparisonStatus.DIFF else "log.restore_ok"
+                    log(
+                        t(
+                            key,
+                            idx=idx + 1,
+                            total=len(self._results),
+                            pct=result.diff_percentage,
+                            url=result.url,
                         )
-                    else:
-                        log(
-                            f"  ({idx + 1}/{len(self._results)}) [green]OK {result.diff_percentage:.2f}%[/green] {result.url}"
-                        )
+                    )
                 else:
                     # Cache-Miss: Vergleich neu berechnen
                     if comparator is None:
@@ -635,28 +643,26 @@ class VisualRegressionScannerApp(App[None]):
                         recalculated += 1
                         self._restore_restored = restored
 
-                        if result.status == ComparisonStatus.DIFF:
-                            log(
-                                f"  ({idx + 1}/{len(self._results)}) [red]DIFF {diff_pct:.2f}%[/red] {result.url} [dim](neu berechnet)[/dim]"
-                            )
-                        else:
-                            log(
-                                f"  ({idx + 1}/{len(self._results)}) [green]OK {diff_pct:.2f}%[/green] {result.url} [dim](neu berechnet)[/dim]"
-                            )
+                        key = (
+                            "log.restore_diff_recalc"
+                            if result.status == ComparisonStatus.DIFF
+                            else "log.restore_ok_recalc"
+                        )
+                        log(t(key, idx=idx + 1, total=len(self._results), pct=diff_pct, url=result.url))
                     except Exception as e:
-                        log(f"  ({idx + 1}/{len(self._results)}) [red]ERR[/red] {result.url}: {e}")
+                        log(t("log.restore_error", idx=idx + 1, total=len(self._results), url=result.url, error=e))
             elif has_current and not has_baseline:
                 # Nur Current vorhanden, keine Baseline
                 result.status = ComparisonStatus.NEW_BASELINE
                 restored += 1
                 self._restore_restored = restored
-                log(f"  ({idx + 1}/{len(self._results)}) [blue]NEU[/blue] {result.url}")
+                log(t("log.restore_new", idx=idx + 1, total=len(self._results), url=result.url))
             elif has_baseline and not has_current:
                 # Nur Baseline vorhanden, kein aktueller Screenshot
                 result.status = ComparisonStatus.PENDING
 
         if cache_hits > 0 or recalculated > 0:
-            log(f"  [dim]Cache: {cache_hits} aus Cache, {recalculated} neu berechnet[/dim]")
+            log(t("log.cache_stats", hits=cache_hits, recalculated=recalculated))
 
         return restored
 
@@ -709,11 +715,11 @@ class VisualRegressionScannerApp(App[None]):
     def action_start_scan(self) -> None:
         """Startet den Scan - fragt ggf. nach dem Scan-Modus."""
         if self._scan_running:
-            self.notify("Scan laeuft bereits!", severity="warning")
+            self.notify(t("notify.scan_running"), severity="warning")
             return
 
         if not self._urls:
-            self.notify("Keine URLs geladen! Bitte zuerst eine Sitemap laden.", severity="error")
+            self.notify(t("notify.no_urls_loaded"), severity="error")
             return
 
         # Pruefen ob Referenz UND aktuelle Screenshots vorhanden sind
@@ -744,7 +750,7 @@ class VisualRegressionScannerApp(App[None]):
                   oder None (abgebrochen).
         """
         if mode is None:
-            self.notify("Scan abgebrochen.")
+            self.notify(t("notify.scan_cancelled"))
             return
 
         from .screens.scan_mode import SCAN_UPDATE_BASELINE
@@ -770,7 +776,7 @@ class VisualRegressionScannerApp(App[None]):
 
         # Option B: Aktuelle Screenshots als neue Referenz uebernehmen
         if update_baseline:
-            self._write_log("[bold yellow]Referenz wird aktualisiert...[/bold yellow]")
+            self._write_log(t("log.updating_baseline"))
             await asyncio.to_thread(self._promote_current_to_baseline)
 
         # Ergebnisse zuruecksetzen (gleiche Objekte behalten!)
@@ -828,11 +834,11 @@ class VisualRegressionScannerApp(App[None]):
                 on_progress=on_progress,
             )
         except Exception as e:
-            self._write_log(f"[red]Scan-Fehler: {e}[/red]")
-            self.notify(f"Scan-Fehler: {e}", severity="error")
+            self._write_log(t("notify.scan_error", error=e))
+            self.notify(t("notify.scan_error", error=e), severity="error")
 
         # Screenshots mit Baselines vergleichen
-        self._write_log("\n[bold]Vergleiche Screenshots mit Baselines...[/bold]")
+        self._write_log(t("log.comparing"))
         baseline_manager = BaselineManager(self._baseline_dir)
         comparator = Comparator(threshold=self.threshold)
 
@@ -861,7 +867,7 @@ class VisualRegressionScannerApp(App[None]):
                     os.remove(result.screenshot_path)
                 result.screenshot_path = ""
 
-                self._write_log(f"  [blue]NEU[/blue] {result.url} (als Baseline gespeichert)")
+                self._write_log(t("log.new_baseline", url=result.url))
             else:
                 # Baseline vorhanden -> vergleichen
                 result.baseline_path = baseline_path
@@ -880,14 +886,14 @@ class VisualRegressionScannerApp(App[None]):
 
                     if diff_pct > self.threshold:
                         result.status = ComparisonStatus.DIFF
-                        self._write_log(f"  [red]DIFF[/red] {result.url} ({diff_pct:.2f}%)")
+                        self._write_log(t("log.diff", url=result.url, pct=diff_pct))
                     else:
                         result.status = ComparisonStatus.MATCH
-                        self._write_log(f"  [green]OK[/green] {result.url} ({diff_pct:.2f}%)")
+                        self._write_log(t("log.match", url=result.url, pct=diff_pct))
                 except Exception as e:
                     result.status = ComparisonStatus.ERROR
                     result.error_message = str(e)
-                    self._write_log(f"  [red]ERR[/red] {result.url}: {e}")
+                    self._write_log(t("log.compare_error", url=result.url, error=e))
 
             # Live-Update
             self._on_scan_result(result)
@@ -909,13 +915,16 @@ class VisualRegressionScannerApp(App[None]):
                 failed=summary_data.errors + summary_data.timeouts,
             )
 
-        self._write_log(f"\n[bold green]Scan abgeschlossen in {duration_ms / 1000:.1f}s[/bold green]")
+        self._write_log(t("log.scan_done", seconds=duration_ms / 1000))
         self._write_log(
-            f"Ergebnis: {summary_data.matches} OK | "
-            f"{summary_data.diffs} Diffs | "
-            f"{summary_data.new_baselines} Neue | "
-            f"{summary_data.errors} Fehler | "
-            f"{summary_data.timeouts} Timeouts"
+            t(
+                "log.scan_summary",
+                matches=summary_data.matches,
+                diffs=summary_data.diffs,
+                new=summary_data.new_baselines,
+                errors=summary_data.errors,
+                timeouts=summary_data.timeouts,
+            )
         )
 
         # Tabelle final aktualisieren
@@ -926,7 +935,7 @@ class VisualRegressionScannerApp(App[None]):
         summary = self.query_one("#summary", SummaryPanel)
         summary.update_from_results(self._results)
 
-        self.sub_title = f"{len(self._urls)} URLs - Scan abgeschlossen"
+        self.sub_title = t("subtitle.scan_done", count=len(self._urls))
 
         # Ergebnisse als Cache speichern (fuer schnellen Neustart)
         self._save_results_cache()
@@ -952,7 +961,7 @@ class VisualRegressionScannerApp(App[None]):
             with contextlib.suppress(Exception):
                 self.call_from_thread(
                     self._write_log,
-                    f"  Alte Referenz gelöscht ({old_count} Bilder)",
+                    t("log.baseline_deleted", count=old_count),
                 )
 
         os.makedirs(self._baseline_dir, exist_ok=True)
@@ -970,7 +979,7 @@ class VisualRegressionScannerApp(App[None]):
         with contextlib.suppress(Exception):
             self.call_from_thread(
                 self._write_log,
-                f"  [green]{moved} Screenshots als neue Referenz gespeichert[/green]",
+                t("log.baseline_promoted", count=moved),
             )
 
         # Diffs loeschen (sind nicht mehr gueltig)
@@ -1009,7 +1018,7 @@ class VisualRegressionScannerApp(App[None]):
             current: Aktuell abgeschlossene URLs.
             total: Gesamtanzahl URLs.
         """
-        self.sub_title = f"Scanning... {current}/{total}"
+        self.sub_title = t("subtitle.scanning", current=current, total=total)
 
     def on_results_table_result_highlighted(self, event: ResultsTable.ResultHighlighted) -> None:
         """Aktualisiert die Detail-Ansicht beim Cursor-Wechsel."""
@@ -1029,12 +1038,12 @@ class VisualRegressionScannerApp(App[None]):
     def action_save_reports(self) -> None:
         """Speichert HTML- und JSON-Reports."""
         if not self._results:
-            self.notify("Keine Ergebnisse vorhanden!", severity="warning")
+            self.notify(t("notify.no_results"), severity="warning")
             return
 
         scanned = [r for r in self._results if r.status not in (ComparisonStatus.PENDING, ComparisonStatus.SCANNING)]
         if not scanned:
-            self.notify("Noch keine Seiten gescannt!", severity="warning")
+            self.notify(t("notify.nothing_scanned"), severity="warning")
             return
 
         duration_ms = int((time.monotonic() - self._scan_start_time) * 1000) if self._scan_start_time > 0 else 0
@@ -1046,14 +1055,14 @@ class VisualRegressionScannerApp(App[None]):
         # JSON
         json_path = f"visual-regression-report_{timestamp}.json"
         saved_json = Reporter.save_json(self._results, summary, json_path)
-        self._write_log(f"[green]JSON-Report: {saved_json}[/green]")
+        self._write_log(t("log.json_report", path=saved_json))
 
         # HTML
         html_path = f"visual-regression-report_{timestamp}.html"
         saved_html = Reporter.save_html(self._results, summary, html_path)
-        self._write_log(f"[green]HTML-Report: {saved_html}[/green]")
+        self._write_log(t("log.html_report", path=saved_html))
 
-        self.notify(f"Reports gespeichert: {json_path}, {html_path}")
+        self.notify(t("notify.reports_saved", json=json_path, html=html_path))
 
     def _save_reports_auto(self, summary: ComparisonSummary) -> None:
         """Speichert Reports automatisch (CLI-Parameter).
@@ -1063,20 +1072,20 @@ class VisualRegressionScannerApp(App[None]):
         """
         if self.output_json:
             path = Reporter.save_json(self._results, summary, self.output_json)
-            self._write_log(f"[green]JSON-Report: {path}[/green]")
+            self._write_log(t("log.json_report", path=path))
 
         if self.output_html:
             path = Reporter.save_html(self._results, summary, self.output_html)
-            self._write_log(f"[green]HTML-Report: {path}[/green]")
+            self._write_log(t("log.html_report", path=path))
 
     def action_reset_site(self) -> None:
         """Zeigt den Bestaetigungsdialog fuer den Reset an."""
         if self._scan_running:
-            self.notify("Scan laeuft! Bitte zuerst abwarten.", severity="warning")
+            self.notify(t("notify.scan_running_reset"), severity="warning")
             return
 
         if not self._site_dir:
-            self.notify("Keine Site geladen!", severity="warning")
+            self.notify(t("notify.no_site"), severity="warning")
             return
 
         # Anzahl vorhandener Dateien zaehlen fuer die Warnung
@@ -1112,9 +1121,9 @@ class VisualRegressionScannerApp(App[None]):
                     count = len(os.listdir(sub_dir))
                     shutil.rmtree(sub_dir)
                     deleted_files += count
-                    self._write_log(f"  Gelöscht: {sub_dir} ({count} Dateien)")
+                    self._write_log(t("log.reset_deleted_dir", path=sub_dir, count=count))
                 except Exception as e:
-                    self._write_log(f"  [red]Fehler beim Löschen von {sub_dir}: {e}[/red]")
+                    self._write_log(t("log.reset_delete_error", path=sub_dir, error=e))
 
         # Cache-Datei loeschen
         cache_path = os.path.join(self._site_dir, self.RESULTS_CACHE_FILE)
@@ -1125,7 +1134,7 @@ class VisualRegressionScannerApp(App[None]):
             except Exception:
                 pass
 
-        self._write_log(f"[yellow]Reset: {deleted_files} Dateien gelöscht für {self._site_hostname}[/yellow]")
+        self._write_log(t("log.reset_summary", count=deleted_files, host=self._site_hostname))
 
         # Ergebnisse zuruecksetzen
         self._results.clear()
@@ -1146,8 +1155,8 @@ class VisualRegressionScannerApp(App[None]):
         log_widget.clear()
         self._log_lines.clear()
 
-        self._write_log("[bold]Reset abgeschlossen. Lade Sitemap neu...[/bold]")
-        self.notify(f"Reset: {deleted_files} Dateien gelöscht")
+        self._write_log(t("log.reset_done"))
+        self.notify(t("notify.reset_done", count=deleted_files))
 
         # Sitemap neu laden
         if self.sitemap_url:
@@ -1159,7 +1168,7 @@ class VisualRegressionScannerApp(App[None]):
         result = table.get_selected_result()
 
         if not result:
-            self.notify("Keine URL ausgewählt!", severity="warning")
+            self.notify(t("notify.no_url_selected"), severity="warning")
             return
 
         self._open_images_for_result(result)
@@ -1171,7 +1180,7 @@ class VisualRegressionScannerApp(App[None]):
             result: Das ScreenshotResult dessen Bilder geoeffnet werden sollen.
         """
         if not result.screenshot_path:
-            self.notify("Kein Screenshot vorhanden! Bitte zuerst scannen.", severity="warning")
+            self.notify(t("notify.no_screenshot"), severity="warning")
             return
 
         from .services.image_viewer import open_comparison_view
@@ -1179,9 +1188,9 @@ class VisualRegressionScannerApp(App[None]):
         path = open_comparison_view(result)
 
         if path:
-            self._write_log(f"Bilder geöffnet: {result.url}")
+            self._write_log(t("log.images_opened", url=result.url))
         else:
-            self.notify("Keine Bilder verfügbar!", severity="warning")
+            self.notify(t("notify.no_images"), severity="warning")
 
     def action_toggle_log(self) -> None:
         """Blendet den Log-Bereich ein/aus."""
@@ -1223,15 +1232,9 @@ class VisualRegressionScannerApp(App[None]):
                 version=__version__,
                 author=__author__,
                 release=__year__,
-                description=(
-                    "Erkennt visuelle Veränderungen auf Websites, indem es jede Seite der "
-                    "Sitemap aufnimmt und mit einer gespeicherten Referenz vergleicht.\n\n"
-                    "Abweichungen werden Pixel für Pixel ermittelt und ab einer einstellbaren "
-                    "Schwelle gemeldet - so fallen ungewollte Änderungen nach einem Deployment "
-                    "auf, bevor es jemand anderes bemerkt."
-                ),
+                description=t("about.description"),
                 license="Apache-2.0",
-                lang=detect_language(),
+                lang=current_language(),
                 url="https://www.michaelblaess.de/",
                 homepage_url="https://github.com/michaelblaess/visual-regression-scanner",
             )
@@ -1246,6 +1249,32 @@ class VisualRegressionScannerApp(App[None]):
         self._log_lines.append(line)
         with contextlib.suppress(Exception):
             self.query_one("#scan-log", LogPanel).write(line)
+
+
+def _localize_bindings(target: App[None] | ModalScreen[None]) -> None:
+    """Ersetzt die Sprachschluessel in den Tastenkuerzeln durch die uebersetzten Texte.
+
+    Klassen-BINDINGS entstehen beim Import des Moduls - da ist noch keine
+    Sprachdatei geladen. Deshalb stehen dort Schluessel, die erst zur Laufzeit
+    aufgeloest werden. Beschriftungen ohne Eintrag in der Sprachdatei - etwa die
+    von Textual mitgebrachten Kuerzel - bleiben unveraendert, weil t() einen
+    unbekannten Schluessel unveraendert zurueckgibt.
+
+    Args:
+        target:
+            App oder Screen, dessen Tastenkuerzel uebersetzt werden.
+    """
+    for key, bindings in target._bindings.key_to_bindings.items():
+        target._bindings.key_to_bindings[key] = [
+            Binding(
+                binding.key,
+                binding.action,
+                t(binding.description),
+                show=binding.show,
+                key_display=binding.key_display,
+            )
+            for binding in bindings
+        ]
 
 
 def _extract_hostname(url: str) -> str:
@@ -1303,12 +1332,13 @@ class _SitemapErrorScreen(ModalScreen[None]):
     """
 
     BINDINGS = [
-        Binding("escape", "close", "Schließen"),
-        Binding("q", "close", "Schließen"),
+        Binding("escape", "close", "binding.close"),
+        Binding("q", "close", "binding.close"),
     ]
 
     def __init__(self, message: str, **kwargs: Any) -> None:
         super().__init__(**kwargs)
+        _localize_bindings(self)
         self._message = message
 
     def compose(self) -> ComposeResult:
@@ -1317,9 +1347,9 @@ class _SitemapErrorScreen(ModalScreen[None]):
         from textual.widgets import Static
 
         with Vertical():
-            yield Static("Fehler", id="error-title")
+            yield Static(t("error.title"), id="error-title")
             yield Static(self._message, id="error-message")
-            yield Static("ESC = Schließen", id="error-footer")
+            yield Static(t("error.footer"), id="error-footer")
 
     def action_close(self) -> None:
         """Schliesst den Dialog."""

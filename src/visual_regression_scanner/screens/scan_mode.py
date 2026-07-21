@@ -12,6 +12,8 @@ from textual.screen import ModalScreen
 from textual.widget import Widget
 from textual.widgets import Button, Static
 
+from ..i18n import t
+
 # Rueckgabewerte des Dialogs
 SCAN_REPLACE = "replace"  # Option A: Nur neue Screenshots, Referenz bleibt
 SCAN_UPDATE_BASELINE = "update"  # Option B: Current → Referenz, dann neuer Scan
@@ -92,9 +94,9 @@ class ScanModeScreen(ModalScreen[str | None]):
     """
 
     BINDINGS = [
-        Binding("a", "option_a", "Option A", show=False),
-        Binding("b", "option_b", "Option B", show=False),
-        Binding("escape", "cancel", "Abbrechen", show=False),
+        Binding("a", "option_a", t("binding.option_a"), show=False),
+        Binding("b", "option_b", t("binding.option_b"), show=False),
+        Binding("escape", "cancel", t("binding.cancel"), show=False),
     ]
 
     def __init__(self, baseline_count: int, current_count: int, **kwargs: Any) -> None:
@@ -104,35 +106,23 @@ class ScanModeScreen(ModalScreen[str | None]):
 
     def compose(self) -> ComposeResult:
         """Erstellt das Modal-Layout mit zwei Optionen."""
-        intro = (
-            f"Es sind bereits {self._baseline_count} Referenz-Bilder und "
-            f"{self._current_count} aktuelle Screenshots vorhanden.\n\n"
-            f"Wie soll der neue Scan verfahren?"
-        )
+        intro = t("scanmode.intro", baseline=self._baseline_count, current=self._current_count)
 
         with Vertical():
-            yield Static("Scan-Modus", id="scan-mode-title")
+            yield Static(t("scanmode.title"), id="scan-mode-title")
             yield Static(intro, id="scan-mode-intro")
 
             # Option A
             with Vertical(classes="option-box"):
                 yield _OptionWidget(_build_option_a_text())
-                yield Button(
-                    "A: Erneut scannen",
-                    id="btn-option-a",
-                    variant="primary",
-                )
+                yield Button(t("scanmode.btn.a"), id="btn-option-a", variant="primary")
 
             # Option B
             with Vertical(classes="option-box"):
                 yield _OptionWidget(_build_option_b_text())
-                yield Button(
-                    "B: Referenz aktualisieren + scannen",
-                    id="btn-option-b",
-                    variant="warning",
-                )
+                yield Button(t("scanmode.btn.b"), id="btn-option-b", variant="warning")
 
-            yield Button("Abbrechen", id="btn-scan-cancel", variant="default")
+            yield Button(t("scanmode.btn.cancel"), id="btn-scan-cancel", variant="default")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Reagiert auf Button-Klicks.
@@ -167,19 +157,19 @@ def _build_option_a_text() -> Text:
         Rich Text mit Beschreibung und Workflow-Diagramm.
     """
     text = Text()
-    text.append("Erneut scannen\n", style="bold")
-    text.append("Neue Screenshots ersetzen die aktuellen.\n", style="dim")
-    text.append("Die Referenz bleibt unverändert.\n\n", style="dim")
+    text.append(t("scanmode.a.head"), style="bold")
+    text.append(t("scanmode.a.desc1"), style="dim")
+    text.append(t("scanmode.a.desc2"), style="dim")
 
     #  Workflow-Diagramm
-    text.append("  Referenz (Baseline)\n", style="bold cyan")
-    text.append("    |  bleibt unverändert\n", style="dim")
+    text.append(t("scanmode.a.baseline"), style="bold cyan")
+    text.append(t("scanmode.a.unchanged"), style="dim")
     text.append("    |\n", style="dim")
-    text.append("    +--< Vergleich >--+\n", style="bold")
+    text.append(t("scanmode.compare"), style="bold")
     text.append("                      |\n", style="dim")
-    text.append("  Neuer Scan ", style="bold green")
+    text.append(t("scanmode.new_scan"), style="bold green")
     text.append("----------+\n", style="dim")
-    text.append("    ersetzt aktuelle Screenshots\n", style="dim")
+    text.append(t("scanmode.a.replaces"), style="dim")
 
     return text
 
@@ -191,21 +181,21 @@ def _build_option_b_text() -> Text:
         Rich Text mit Beschreibung und Workflow-Diagramm.
     """
     text = Text()
-    text.append("Referenz aktualisieren + scannen\n", style="bold")
-    text.append("Die aktuellen Screenshots werden zur neuen Referenz.\n", style="dim")
-    text.append("Dann wird ein neuer Scan durchgefuehrt.\n\n", style="dim")
+    text.append(t("scanmode.b.head"), style="bold")
+    text.append(t("scanmode.b.desc1"), style="dim")
+    text.append(t("scanmode.b.desc2"), style="dim")
 
     # Workflow-Diagramm
-    text.append("  Alte Referenz ", style="dim")
-    text.append("x gelöscht\n", style="bold red")
-    text.append("  Aktuelle Screenshots ", style="bold yellow")
+    text.append(t("scanmode.b.old_baseline"), style="dim")
+    text.append(t("scanmode.b.deleted"), style="bold red")
+    text.append(t("scanmode.b.current"), style="bold yellow")
     text.append("---> ", style="bold")
-    text.append("neue Referenz\n", style="bold cyan")
+    text.append(t("scanmode.b.new_baseline"), style="bold cyan")
     text.append("    |\n", style="dim")
-    text.append("    +--< Vergleich >--+\n", style="bold")
+    text.append(t("scanmode.compare"), style="bold")
     text.append("                      |\n", style="dim")
-    text.append("  Neuer Scan ", style="bold green")
+    text.append(t("scanmode.new_scan"), style="bold green")
     text.append("----------+\n", style="dim")
-    text.append("    wird zu aktuellen Screenshots\n", style="dim")
+    text.append(t("scanmode.b.becomes"), style="dim")
 
     return text

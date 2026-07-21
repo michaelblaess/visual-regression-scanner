@@ -12,6 +12,7 @@ from textual.reactive import reactive
 from textual.timer import Timer
 from textual.widgets import DataTable, Input, Static
 
+from ..i18n import t
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 
 
@@ -70,14 +71,21 @@ class ResultsTable(Vertical):
 
     def compose(self) -> ComposeResult:
         """Erstellt die Kind-Widgets."""
-        yield Input(placeholder="Filter (URL, Status...)", id="filter-bar")
+        yield Input(placeholder=t("table.filter_placeholder"), id="filter-bar")
         yield Static("", id="results-count")
         yield DataTable(id="results-data", cursor_type="row", zebra_stripes=True)
 
     def on_mount(self) -> None:
         """Initialisiert die Tabellenspalten und startet den Spinner-Timer."""
         table = self.query_one("#results-data", DataTable)
-        table.add_columns("#", "Status", "URL", "HTTP", "Zeit", "Diff %")
+        table.add_columns(
+            t("table.col.index"),
+            t("table.col.status"),
+            t("table.col.url"),
+            t("table.col.http"),
+            t("table.col.time"),
+            t("table.col.diff"),
+        )
         self._spinner_timer = self.set_interval(0.3, self._tick_spinner)
 
     def _tick_spinner(self) -> None:
@@ -155,9 +163,9 @@ class ResultsTable(Vertical):
         total = len(self._results)
         shown = len(self._filtered)
         if total == shown:
-            count_label.update(f" {total} URLs")
+            count_label.update(t("table.count_all", total=total))
         else:
-            count_label.update(f" {shown} von {total} URLs (gefiltert)")
+            count_label.update(t("table.count_filtered", shown=shown, total=total))
 
     def _styled_status(self, result: ScreenshotResult) -> Text:
         """Erstellt farbcodierten Status-Text.
@@ -173,12 +181,12 @@ class ResultsTable(Vertical):
             return Text(frame, style="bold cyan")
 
         styles = {
-            ComparisonStatus.PENDING: ("...", "dim"),
-            ComparisonStatus.MATCH: ("OK", "bold green"),
-            ComparisonStatus.DIFF: ("DIFF", "bold red"),
-            ComparisonStatus.NEW_BASELINE: ("NEU", "bold blue"),
-            ComparisonStatus.ERROR: ("ERR", "bold red"),
-            ComparisonStatus.TIMEOUT: ("T/O", "bold yellow"),
+            ComparisonStatus.PENDING: (t("status.pending"), "dim"),
+            ComparisonStatus.MATCH: (t("status.match"), "bold green"),
+            ComparisonStatus.DIFF: (t("status.diff"), "bold red"),
+            ComparisonStatus.NEW_BASELINE: (t("status.new_baseline"), "bold blue"),
+            ComparisonStatus.ERROR: (t("status.error"), "bold red"),
+            ComparisonStatus.TIMEOUT: (t("status.timeout"), "bold yellow"),
         }
         icon, style = styles.get(result.status, ("?", ""))
         return Text(icon, style=style)

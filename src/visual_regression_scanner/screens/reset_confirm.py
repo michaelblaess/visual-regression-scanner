@@ -10,6 +10,8 @@ from textual.containers import Horizontal, Vertical
 from textual.screen import ModalScreen
 from textual.widgets import Button, Static
 
+from ..i18n import t
+
 
 class ResetConfirmScreen(ModalScreen[bool]):
     """Modal-Dialog zur Bestaetigung des Site-Resets."""
@@ -55,10 +57,10 @@ class ResetConfirmScreen(ModalScreen[bool]):
     """
 
     BINDINGS = [
-        Binding("y", "confirm", "Ja", show=False),
-        Binding("j", "confirm", "Ja", show=False),
-        Binding("n", "cancel", "Nein", show=False),
-        Binding("escape", "cancel", "Abbrechen", show=False),
+        Binding("y", "confirm", t("binding.yes"), show=False),
+        Binding("j", "confirm", t("binding.yes"), show=False),
+        Binding("n", "cancel", t("binding.no"), show=False),
+        Binding("escape", "cancel", t("binding.cancel"), show=False),
     ]
 
     def __init__(self, hostname: str, file_count: int, **kwargs: Any) -> None:
@@ -68,19 +70,14 @@ class ResetConfirmScreen(ModalScreen[bool]):
 
     def compose(self) -> ComposeResult:
         """Erstellt das Modal-Layout mit Buttons."""
-        msg = (
-            f"Alle Bilder für {self._hostname} werden gelöscht!\n\n"
-            f"Betroffen: {self._file_count} Dateien "
-            f"(Baselines, Screenshots, Diffs)\n\n"
-            f"Die Sitemap wird danach neu geladen."
-        )
+        msg = t("reset.message", host=self._hostname, count=self._file_count)
 
         with Vertical():
-            yield Static("Reset", id="reset-title")
+            yield Static(t("reset.title"), id="reset-title")
             yield Static(msg, id="reset-message")
             with Horizontal(classes="button-row"):
-                yield Button("Löschen", id="btn-reset-confirm", variant="error")
-                yield Button("Abbrechen", id="btn-reset-cancel", variant="default")
+                yield Button(t("reset.btn.delete"), id="btn-reset-confirm", variant="error")
+                yield Button(t("reset.btn.cancel"), id="btn-reset-cancel", variant="default")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Reagiert auf Button-Klicks.

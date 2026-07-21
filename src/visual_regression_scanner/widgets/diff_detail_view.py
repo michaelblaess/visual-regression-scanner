@@ -16,6 +16,7 @@ from textual.message import Message
 from textual.widget import Widget
 from textual.widgets import Button, Static
 
+from ..i18n import t
 from ..models.scan_result import ComparisonStatus, ScreenshotResult
 from .image_preview import ImagePreview
 
@@ -75,36 +76,29 @@ class DiffDetailView(Widget):
     def compose(self) -> ComposeResult:
         """Erstellt das Widget-Layout."""
         with Vertical():
-            yield Static(
-                Text("Keine URL ausgewählt.\n\nWähle eine URL in der Tabelle aus.", style="dim italic"),
-                id="detail-content",
-            )
+            yield Static(Text(t("detail.no_selection"), style="dim italic"), id="detail-content")
 
             # Datei-Zeilen: Label + Pfad + Oeffnen-Button
             with Horizontal(classes="file-row", id="row-baseline"):
                 yield Static(id="info-baseline", classes="file-info")
-                yield Button("Öffnen", id="btn-open-baseline", variant="default")
+                yield Button(t("detail.btn.open"), id="btn-open-baseline", variant="default")
 
             with Horizontal(classes="file-row", id="row-screenshot"):
                 yield Static(id="info-screenshot", classes="file-info")
-                yield Button("Öffnen", id="btn-open-screenshot", variant="default")
+                yield Button(t("detail.btn.open"), id="btn-open-screenshot", variant="default")
 
             with Horizontal(classes="file-row", id="row-diff"):
                 yield Static(id="info-diff", classes="file-info")
-                yield Button("Öffnen", id="btn-open-diff", variant="default")
+                yield Button(t("detail.btn.open"), id="btn-open-diff", variant="default")
 
             # Vorschau im Terminal: schneller Blick, ohne den Browser zu oeffnen.
             with Horizontal(id="preview-switch"):
-                yield Button("Referenz", id="btn-view-baseline", variant="default")
-                yield Button("Aktuell", id="btn-view-screenshot", variant="default")
-                yield Button("Unterschied", id="btn-view-diff", variant="default")
+                yield Button(t("detail.btn.baseline"), id="btn-view-baseline", variant="default")
+                yield Button(t("detail.btn.current"), id="btn-view-screenshot", variant="default")
+                yield Button(t("detail.btn.diff"), id="btn-view-diff", variant="default")
             yield ImagePreview(enabled_graphics=self._graphics, id="detail-preview")
 
-            yield Button(
-                "Alle Bilder im Browser vergleichen",
-                id="btn-open-images",
-                variant="primary",
-            )
+            yield Button(t("detail.btn.compare_browser"), id="btn-open-images", variant="primary")
 
     def on_mount(self) -> None:
         """Versteckt alle Buttons initial."""
@@ -150,7 +144,7 @@ class DiffDetailView(Widget):
         """Leert die Detail-Ansicht."""
         self._result = None
         content = self.query_one("#detail-content", Static)
-        content.update(Text("Keine URL ausgewählt.\n\nWähle eine URL in der Tabelle aus.", style="dim italic"))
+        content.update(Text(t("detail.no_selection"), style="dim italic"))
         self._hide_file_rows()
         self.query_one("#btn-open-images", Button).display = False
 
@@ -182,7 +176,7 @@ class DiffDetailView(Widget):
         if result.baseline_path and os.path.exists(result.baseline_path):
             has_files = True
             timestamp = _get_file_timestamp(result.baseline_path)
-            label = "Referenz (Baseline)"
+            label = t("detail.label.baseline")
             if timestamp:
                 label += f"  ({timestamp})"
             info = self.query_one("#info-baseline", Static)
@@ -200,7 +194,7 @@ class DiffDetailView(Widget):
         if result.screenshot_path and os.path.exists(result.screenshot_path):
             has_files = True
             timestamp = _get_file_timestamp(result.screenshot_path)
-            label = "Aktueller Screenshot"
+            label = t("detail.label.screenshot")
             if timestamp:
                 label += f"  ({timestamp})"
             info = self.query_one("#info-screenshot", Static)
@@ -220,7 +214,7 @@ class DiffDetailView(Widget):
             info = self.query_one("#info-diff", Static)
             info.update(
                 Text.assemble(
-                    ("Diff\n", "bold"),
+                    (f"{t('detail.label.diff')}\n", "bold"),
                     (result.diff_path, "dim"),
                 )
             )
@@ -240,16 +234,16 @@ class DiffDetailView(Widget):
         """
         result = self._result
         if not result:
-            return Text("Keine URL ausgewählt.", style="dim italic")
+            return Text(t("detail.no_selection_short"), style="dim italic")
 
         text = Text()
 
         # URL-Header
-        text.append("URL\n", style="bold underline")
+        text.append(f"{t('detail.head.url')}\n", style="bold underline")
         text.append(f"{result.url}\n\n", style="bold cyan")
 
         # Status-Zeile
-        text.append("Status: ", style="bold")
+        text.append(t("detail.status"), style="bold")
         status_style = {
             ComparisonStatus.MATCH: "bold green",
             ComparisonStatus.DIFF: "bold red",
@@ -269,68 +263,67 @@ class DiffDetailView(Widget):
             text.append(f"  |  {load_s:.1f}s")
 
         if result.retry_count > 0:
-            text.append(f"  |  {result.retry_count} Retries", style="yellow")
+            text.append(t("detail.retries", count=result.retry_count), style="yellow")
 
         text.append("\n\n")
 
         # Diff-Informationen
         if result.status == ComparisonStatus.SCANNING:
-            text.append("Screenshot wird erstellt...", style="cyan")
+            text.append(t("detail.scanning"), style="cyan")
             return text
 
         if result.status == ComparisonStatus.PENDING:
-            text.append("Noch nicht gescannt.", style="dim")
+            text.append(t("detail.pending"), style="dim")
             return text
 
         if result.status == ComparisonStatus.NEW_BASELINE:
-            text.append("Neue Referenz\n", style="bold blue underline")
-            text.append("Keine vorherige Referenz vorhanden.\n")
-            text.append("Screenshot wurde als neue Referenz gespeichert.\n\n")
+            text.append(f"{t('detail.new_baseline_head')}\n", style="bold blue underline")
+            text.append(t("detail.new_baseline_body"))
             return text
 
         if result.status in (ComparisonStatus.ERROR, ComparisonStatus.TIMEOUT):
-            text.append("Fehler\n", style="bold red underline")
+            text.append(f"{t('detail.error_head')}\n", style="bold red underline")
             text.append(f"{result.error_message}\n", style="red")
             return text
 
         # MATCH oder DIFF
-        text.append("Vergleich\n", style="bold underline")
+        text.append(f"{t('detail.comparison')}\n", style="bold underline")
         text.append("\n")
 
         # Diff-Prozent
-        text.append("Diff: ", style="bold")
+        text.append(t("detail.diff"), style="bold")
         diff_style = "bold red" if result.is_diff else "bold green"
         text.append(f"{result.diff_percentage:.4f}%", style=diff_style)
         text.append("\n")
 
         # Pixel-Info
-        text.append("Geänderte Pixel: ", style="bold")
+        text.append(t("detail.changed_pixels"), style="bold")
         text.append(f"{result.diff_pixel_count:,}")
-        text.append(f" von {result.total_pixel_count:,}", style="dim")
+        text.append(t("detail.of_total", total=result.total_pixel_count), style="dim")
         text.append("\n")
 
         # Threshold
-        text.append("Threshold: ", style="bold")
+        text.append(t("detail.threshold"), style="bold")
         text.append(f"{result.threshold}%")
         text.append("\n")
 
         # Ergebnis
-        text.append("Ergebnis: ", style="bold")
+        text.append(t("detail.result"), style="bold")
         if result.is_diff:
             text.append(
                 f"{result.diff_percentage:.4f}% > {result.threshold}% ",
                 style="bold red",
             )
-            text.append("VISUELLER UNTERSCHIED", style="bold red")
+            text.append(t("detail.visual_diff"), style="bold red")
         else:
             text.append(
                 f"{result.diff_percentage:.4f}% <= {result.threshold}% ",
                 style="bold green",
             )
-            text.append("IDENTISCH", style="bold green")
+            text.append(t("detail.identical"), style="bold green")
 
         text.append("\n\n")
-        text.append("Dateien\n", style="bold underline")
+        text.append(f"{t('detail.files')}\n", style="bold underline")
 
         return text
 

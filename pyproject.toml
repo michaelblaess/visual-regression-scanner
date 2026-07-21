@@ -49,6 +49,9 @@ ignore_missing_imports = true
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+visual_regression_scanner = ["locale/*.json", "*.tcss"]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-v --tb=short"

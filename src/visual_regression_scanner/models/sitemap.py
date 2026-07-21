@@ -6,6 +6,8 @@ import xml.etree.ElementTree as ET
 
 import httpx
 
+from ..i18n import t
+
 # Standard-Namespace fuer Sitemaps
 SITEMAP_NS = "http://www.sitemaps.org/schemas/sitemap/0.9"
 
@@ -77,7 +79,7 @@ class SitemapParser:
                     wait_time = 5 * (2**attempt)
                     await asyncio.sleep(wait_time)
 
-        raise SitemapError(f"Sitemap konnte nach {max_retries} Versuchen nicht geladen werden: {last_error}")
+        raise SitemapError(t("sitemap.error.retries", count=max_retries, error=last_error))
 
     def _parse_xml(self, xml_content: str) -> list[str]:
         """Parst den XML-Inhalt und extrahiert URLs.
@@ -94,7 +96,7 @@ class SitemapParser:
         try:
             root = ET.fromstring(xml_content)
         except ET.ParseError as e:
-            raise SitemapError(f"Sitemap-XML konnte nicht geparst werden: {e}") from e
+            raise SitemapError(t("sitemap.error.parse", error=e)) from e
 
         urls: list[str] = []
 

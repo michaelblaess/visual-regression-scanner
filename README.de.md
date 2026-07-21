@@ -136,7 +136,6 @@ wählst Du ein Ziel aus, statt die URL erneut einzutippen.
 | `o` | Bilder im Browser öffnen (Lightbox mit Zoom) |
 | `l` | Log ein/aus |
 | `e` | Nur Diffs anzeigen |
-| `+` / `-` | Log-Höhe anpassen |
 | `/` | Filter fokussieren |
 | `s` | Einstellungen |
 | `u` | Sitemap-URL eingeben |
@@ -144,15 +143,18 @@ wählst Du ein Ziel aus, statt die URL erneut einzutippen.
 | `i` | About-Dialog |
 | `q` | Beenden |
 
+Die Höhe des Log-Bereichs ziehst Du am Griff darüber. Kopieren, Exportieren und Ausblenden
+liegen im Kontextmenü des Log-Bereichs (Rechtsklick).
+
 ### Dynamischer Scan-Button
 
-Der Text des Scan-Buttons (`s`) passt sich automatisch an den aktuellen Zustand an:
+Der Text des Scan-Buttons (`c`) passt sich automatisch an den aktuellen Zustand an:
 
 | Zustand | Button-Text |
 |---------|------------|
-| Keine Referenz vorhanden | `s Scan (Referenz erstellen)` |
-| Referenz vorhanden, keine Aufnahmen | `s Scan (vs. Referenz)` |
-| Referenz + Aufnahmen vorhanden | `s Scan (Modus waehlen)` |
+| Keine Referenz vorhanden | `c Scan (Referenz erstellen)` |
+| Referenz vorhanden, keine Aufnahmen | `c Scan (vs. Referenz)` |
+| Referenz + Aufnahmen vorhanden | `c Scan (Modus wählen)` |
 
 ## Last auf dem Zielsystem - bitte lesen
 
@@ -196,8 +198,16 @@ Schäden, die aus der Nutzung entstehen, ist ausgeschlossen, soweit dies gesetzl
 Unberührt bleibt die Haftung für Vorsatz und grobe Fahrlässigkeit, für Schäden aus der Verletzung
 des Lebens, des Körpers oder der Gesundheit sowie nach dem Produkthaftungsgesetz.
 
-Beim ersten Start fragt das Programm diesen Hinweis ab. Die Sprache richtet sich nach Deiner
-Systemumgebung - Deutsch nur bei nachweislich deutschsprachiger Umgebung, sonst Englisch.
+Beim ersten Start fragt das Programm diesen Hinweis ab.
+
+## Sprache
+
+Die Oberfläche gibt es vollständig auf **Deutsch** und **Englisch** - Menüs, Meldungen,
+Einstellungen, Protokoll und die Kommandozeilen-Hilfe. Umschalten kannst Du in den
+Einstellungen (`s`); die Wahl wird gespeichert und gilt ab dem nächsten Start.
+
+Beim allerersten Start entscheidet die Systemumgebung: Deutsch nur bei nachweislich
+deutschsprachiger Umgebung, sonst Englisch.
 
 ## Workflow
 
