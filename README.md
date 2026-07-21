@@ -277,7 +277,7 @@ screenshots/
 
 ## Dependencies
 
-- Python 3.10+
+- Python 3.12+
 - Textual (TUI framework)
 - Playwright (browser automation)
 - Pillow (image comparison)
@@ -287,8 +287,11 @@ screenshots/
 ## Creating a Release
 
 ```bash
-git tag v1.1.0
-git push origin v1.1.0
+git tag v1.6.1
+git push origin v1.6.1
 ```
+
+Push the tag explicitly: `git push --follow-tags` leaves lightweight tags behind, and the
+release build never starts.
 
 GitHub Actions automatically builds executables for Windows, Linux, and macOS.
