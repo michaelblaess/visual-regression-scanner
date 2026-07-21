@@ -52,8 +52,8 @@ class DiffDetailScreen(ModalScreen):
     """
 
     BINDINGS = [
-        Binding("escape", "close", "Schliessen"),
-        Binding("q", "close", "Schliessen"),
+        Binding("escape", "close", "Schließen"),
+        Binding("q", "close", "Schließen"),
     ]
 
     def __init__(self, result: ScreenshotResult, **kwargs) -> None:
@@ -65,7 +65,7 @@ class DiffDetailScreen(ModalScreen):
         with Vertical():
             yield Static(f"Diff-Details: {self._result.url}", id="detail-title")
             yield Static(self._build_content(), id="detail-content")
-            yield Static("ESC / q = Schliessen", id="detail-footer")
+            yield Static("ESC / q = Schließen", id="detail-footer")
 
     def _build_content(self) -> Text:
         """Erstellt den Detail-Text.
@@ -104,7 +104,7 @@ class DiffDetailScreen(ModalScreen):
 
         # Diff-Details
         text.append(f"Diff: {result.diff_percentage:.4f}%\n", style="bold")
-        text.append(f"Geaenderte Pixel: {result.diff_pixel_count:,}\n")
+        text.append(f"Geänderte Pixel: {result.diff_pixel_count:,}\n")
         text.append(f"Gesamt Pixel: {result.total_pixel_count:,}\n")
         text.append(f"Threshold: {result.threshold}%\n\n")
 

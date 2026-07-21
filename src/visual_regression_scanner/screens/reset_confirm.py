@@ -67,7 +67,7 @@ class ResetConfirmScreen(ModalScreen[bool]):
     def compose(self) -> ComposeResult:
         """Erstellt das Modal-Layout mit Buttons."""
         msg = (
-            f"Alle Bilder fuer {self._hostname} werden geloescht!\n\n"
+            f"Alle Bilder für {self._hostname} werden gelöscht!\n\n"
             f"Betroffen: {self._file_count} Dateien "
             f"(Baselines, Screenshots, Diffs)\n\n"
             f"Die Sitemap wird danach neu geladen."
@@ -77,7 +77,7 @@ class ResetConfirmScreen(ModalScreen[bool]):
             yield Static("Reset", id="reset-title")
             yield Static(msg, id="reset-message")
             with Horizontal(classes="button-row"):
-                yield Button("Loeschen", id="btn-reset-confirm", variant="error")
+                yield Button("Löschen", id="btn-reset-confirm", variant="error")
                 yield Button("Abbrechen", id="btn-reset-cancel", variant="default")
 
     def on_button_pressed(self, event: Button.Pressed) -> None:

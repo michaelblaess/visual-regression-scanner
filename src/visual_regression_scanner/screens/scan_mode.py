@@ -167,11 +167,11 @@ def _build_option_a_text() -> Text:
     text = Text()
     text.append("Erneut scannen\n", style="bold")
     text.append("Neue Screenshots ersetzen die aktuellen.\n", style="dim")
-    text.append("Die Referenz bleibt unveraendert.\n\n", style="dim")
+    text.append("Die Referenz bleibt unverändert.\n\n", style="dim")
 
     #  Workflow-Diagramm
     text.append("  Referenz (Baseline)\n", style="bold cyan")
-    text.append("    |  bleibt unveraendert\n", style="dim")
+    text.append("    |  bleibt unverändert\n", style="dim")
     text.append("    |\n", style="dim")
     text.append("    +--< Vergleich >--+\n", style="bold")
     text.append("                      |\n", style="dim")
@@ -195,7 +195,7 @@ def _build_option_b_text() -> Text:
 
     # Workflow-Diagramm
     text.append("  Alte Referenz ", style="dim")
-    text.append("x geloescht\n", style="bold red")
+    text.append("x gelöscht\n", style="bold red")
     text.append("  Aktuelle Screenshots ", style="bold yellow")
     text.append("---> ", style="bold")
     text.append("neue Referenz\n", style="bold cyan")
