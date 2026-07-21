@@ -37,14 +37,19 @@ Beispiele:
   visual-regression-scanner https://example.com/sitemap.xml --cookie auth=token123
 
 Tastenkuerzel in der TUI:
-  s = Scan starten    u = Baseline ersetzen         r = Reports speichern
+  u = URL eingeben    s = Scan starten             r = Reset
+  R = Reports         o = Bilder oeffnen           c = Log kopieren
   l = Log ein/aus     e = Nur Diffs                / = Filter
   + / - = Log-Hoehe   i = Info                     q = Beenden
 """
 
 
-def main() -> None:
-    """Haupteinstiegspunkt fuer die CLI."""
+def _build_parser() -> argparse.ArgumentParser:
+    """Baut die Kommandozeilen-Schnittstelle auf.
+
+    Getrennt von main(), damit die Vorgabewerte testbar bleiben und der
+    Einstiegspunkt schlank ist.
+    """
     parser = argparse.ArgumentParser(
         prog="visual-regression-scanner",
         description=BANNER,
@@ -100,6 +105,23 @@ def main() -> None:
         help="Max parallele Browser-Tabs (default: 4)",
     )
     parser.add_argument(
+        "--rate-limit",
+        type=int,
+        default=60,
+        metavar="N",
+        help=(
+            "Max. Seiten pro Minute (default: 60). Mit 0 laeuft der Scan ungebremst - "
+            "jede Seite wird fuer den Screenshot voll gerendert und belastet ein "
+            "Produktivsystem entsprechend"
+        ),
+    )
+    parser.add_argument(
+        "--ignore-robots",
+        action="store_true",
+        default=False,
+        help="robots.txt ignorieren (nur fuer eigene Seiten sinnvoll)",
+    )
+    parser.add_argument(
         "--timeout",
         "-t",
         type=int,
@@ -146,11 +168,17 @@ def main() -> None:
         help="Cookie setzen (z.B. --cookie auth=token). Mehrfach verwendbar.",
     )
 
+    return parser
+
+
+def main() -> None:
+    """Haupteinstiegspunkt fuer die CLI."""
+    parser = _build_parser()
     args = parser.parse_args()
 
-    if not args.sitemap_url:
-        parser.print_help()
-        sys.exit(1)
+    # Ohne Sitemap startet die TUI leer - die URL laesst sich dort mit "u"
+    # nachreichen. Das entspricht dem Verhalten der Schwester-Werkzeuge; vorher
+    # war das Programm ohne Argument gar nicht benutzbar.
 
     # Cookies parsen: "NAME=VALUE" -> {"name": "NAME", "value": "VALUE"}
     cookies = []
@@ -181,6 +209,8 @@ def main() -> None:
             url_filter=args.filter,
             user_agent=args.user_agent,
             cookies=cookies,
+            rate_per_minute=args.rate_limit,
+            respect_robots=not args.ignore_robots,
         )
         app.run()
     finally:
