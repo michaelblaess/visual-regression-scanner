@@ -102,7 +102,15 @@ class VisualRegressionScannerApp(App[None]):
         load_locale(self._settings.language)
         self._localize_bindings()
         self._disclaimer = DisclaimerStore(SETTINGS_FILE.parent / "disclaimer.json")
-        self.theme = self._settings.theme
+        # Ein gespeichertes Theme kann verschwunden sein: die Bibliothek wurde
+        # herabgestuft, das Theme umbenannt, oder es kam aus einer noch nicht
+        # veroeffentlichten Fassung. Ohne diese Pruefung wirft Textual
+        # InvalidThemeError und die Anwendung startet gar nicht mehr.
+        self._discarded_theme = ""
+        if self._settings.theme in self.available_themes:
+            self.theme = self._settings.theme
+        elif self._settings.theme:
+            self._discarded_theme = self._settings.theme
 
         self.sitemap_url = sitemap_url
         self.screenshots_dir = os.path.abspath(screenshots_dir)
@@ -256,9 +264,44 @@ class VisualRegressionScannerApp(App[None]):
             return
         self._disclaimer.record()
 
+    def watch_theme(self, theme_name: str) -> None:
+        """Sichert das Theme bei jeder Aenderung und meldet es im Log.
+
+        Haengt bewusst am Reactive und nicht am Einstellungsdialog: nur so
+        werden auch Wechsel ueber die Befehlspalette (Strg+P) erfasst.
+
+        Args:
+            theme_name: Name des neuen Themes.
+        """
+        with contextlib.suppress(Exception):
+            if theme_name and theme_name != self._settings.theme:
+                self._settings.theme = theme_name
+                self._settings.save()
+        self._log_theme()
+
+    def _log_theme(self) -> None:
+        """Schreibt das aktive Theme ins Log.
+
+        Textual zeigt nirgends an, welches Theme gerade laeuft - nach einem
+        Neustart weiss man also nicht, was man vor sich hat. Der technische
+        Name steht mit dabei, weil er in den Einstellungen und in der
+        Befehlspalette auftaucht.
+        """
+        with contextlib.suppress(Exception):
+            from textual_themes import THEME_DISPLAY_NAMES
+
+            name = self.theme or ""
+            anzeige = THEME_DISPLAY_NAMES.get(name, name)
+            beschriftung = f"{anzeige} ({name})" if anzeige != name else name
+            self._write_log(t("log.theme_active", name=beschriftung))
+            if self._discarded_theme:
+                self._write_log(t("log.theme_unknown", name=self._discarded_theme))
+                self._discarded_theme = ""
+
     def on_mount(self) -> None:
         """Initialisierung nach dem Starten."""
         self._write_log(t("log.version", version=__version__))
+        self._log_theme()
         self._write_log(
             t(
                 "log.config",

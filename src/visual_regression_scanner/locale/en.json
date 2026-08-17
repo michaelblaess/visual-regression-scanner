@@ -28,6 +28,8 @@
   "subtitle.restore": "{spinner} Checking results... {done}/{total}",
   "subtitle.restore_restored": " ({count} restored)",
   "log.version": "[bold]Visual Regression Scanner v{version}[/bold]",
+  "log.theme_active": "Theme: {name}",
+  "log.theme_unknown": "Theme \"{name}\" is unknown - using the default",
   "log.config": "Parallel tabs: {concurrency} | Timeout: {timeout}s | Threshold: {threshold}% | Viewport: {viewport}",
   "log.rate_active": "Rate limit active: max. {rate} pages/minute",
   "log.rate_off": "[yellow]No rate limit - up to {concurrency} pages at once, as fast as the target replies. Use --rate-limit for production systems.[/yellow]",
