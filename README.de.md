@@ -11,6 +11,10 @@
 
 ---
 
+<p align="center">
+  <img src="docs/banner.jpg" alt="visual-regression-scanner - zwei Aufnahmen im Vergleich, Unterschiede in Magenta" width="100%">
+</p>
+
 [![Stars](https://img.shields.io/github/stars/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=fbbf24)](https://github.com/michaelblaess/visual-regression-scanner/stargazers)
 [![Forks](https://img.shields.io/github/forks/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=34d399)](https://github.com/michaelblaess/visual-regression-scanner/network/members)
 [![Issues](https://img.shields.io/github/issues/michaelblaess/visual-regression-scanner?logo=github&logoColor=white&color=f87171)](https://github.com/michaelblaess/visual-regression-scanner/issues)
