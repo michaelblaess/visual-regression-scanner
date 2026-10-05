@@ -40,6 +40,18 @@ curl -fsSL https://raw.githubusercontent.com/michaelblaess/visual-regression-sca
 irm https://raw.githubusercontent.com/michaelblaess/visual-regression-scanner/main/install.ps1 | iex
 ```
 
+### Ohne Installation starten (uv)
+
+Ist [uv](https://docs.astral.sh/uv/) installiert (Python ab 3.12):
+
+```bash
+uvx --from visual-regression-scanner playwright install chromium   # einmalig, lädt den Browser
+uvx visual-regression-scanner
+```
+
+Oder von [PyPI](https://pypi.org/project/visual-regression-scanner/) installieren mit `pip install visual-regression-scanner`, danach
+einmalig `playwright install chromium`.
+
 ## Features
 
 - **Automatische Screenshots** aller URLs aus einer XML-Sitemap
